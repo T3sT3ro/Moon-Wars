@@ -1,7 +1,7 @@
-StateManager = require 'scripts/StateManager'
-MainMenuState = require 'scripts/MainMenuState'
-GameSetupState = require 'scripts/GameSetupState'
-GameState = require 'scripts/GameState'
+StateManager = require 'StateManager'
+MainMenuState = require 'states/MainMenuState'
+GameSetupState = require 'states/GameSetupState'
+GameState = require 'states/GameState'
 
 function love.load()
     StateManager.add(MainMenuState)
