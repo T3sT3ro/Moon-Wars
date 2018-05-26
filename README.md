@@ -1,2 +1,2 @@
-# Moon-Wars
+# Moon Age
 Lua strategy turn based game
