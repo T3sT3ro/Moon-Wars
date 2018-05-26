@@ -10,9 +10,10 @@ function love.load()
     StateManager.add(MainMenuState)
     StateManager.add(GameSetupState)
     StateManager.add(GameState)
-    
-    StateManager.load("GameState")
+    StateManager.load("MainMenuState")
+    love.window.setMode(800,600,{msaa=16, borderless=false})
 end
+
 
 function love.update(dt)
     StateManager.update(dt)
