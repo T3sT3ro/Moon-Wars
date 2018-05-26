@@ -2,9 +2,9 @@ local ResourceManager = {}
 local _assets = {}
 
 function ResourceManager.init(resourcesFolderPath)
-    local assets = love.filesystem.enumerate(resourcesFolderPath)
-    for k, file in ipairs(files) do
-        print(k .. ". " .. file) --outputs something like "1. main.lua"
+    local assets = love.filesystem.getDirectoryItems(resourcesFolderPath)
+    for k, file in ipairs(assets) do
+        print(k .. ". " .. file)
     end
 end
 
