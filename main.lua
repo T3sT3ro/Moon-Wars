@@ -10,7 +10,8 @@ function love.load()
     StateManager.add(MainMenuState)
     StateManager.add(GameSetupState)
     StateManager.add(GameState)
-    StateManager.load("MainMenuState")
+    
+    StateManager.load("GameState")
 end
 
 function love.update(dt)
