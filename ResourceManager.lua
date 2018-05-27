@@ -34,4 +34,15 @@ function ResourceManager.get(assetName)
     return asset
 end
 
+function ResourceManager.loadAI()
+    local file = loadfile("AItest.lua", "bt", {print = print }) -- loading with specified enviroment
+    local isOk, ai = pcall(file) -- calling script
+    if not isOk then
+        print("AI loading failed, error: " .. ai)
+        return
+    end
+
+    print(pcall(ai.foo)) -- calling function in script
+end
+
 return ResourceManager
