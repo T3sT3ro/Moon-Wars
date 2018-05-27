@@ -5,18 +5,19 @@ local red = UI.Color(200, 0, 0, 15)
 local ocean = UI.Color("#20a59fff")
 
 local GUI =
-    UI({origin={x=0,x=0},size={x=800, x=600}},
+    UI(
+    {origin = {x = 0, y = 0}, size = {x = 800, y = 600}},
+    {
+        margin = {left = 15, up = 3, right = 15, down = 3},
+        origin = {x = 100, y = 20},
+        size = {x = 200, y = 200},
+        color = UI.Color("#FFAABBCC")
+    },
     {
         keepFocus = true,
         clickThru = true,
         allowOverflow = true,
         draggable = true
-    },
-    {
-        margin = {left = 15, top = 3, right = 15, bottom = 3},
-        origin = {x = 100, y = 20},
-        size = {x = 200, y = 200},
-        color = UI.Color("#FFAABBCC")
     },
     {
         x = 250,
@@ -25,8 +26,6 @@ local GUI =
         color2 = UI.Color("#FFAABB")
     }
 )
-
-local Frame = UI(nil, {margin = {left=20,right=20,u=50,down=50}, size={x=200, y = 50} },{marginColor=UI.Color("#15a999"), innerColor})
 
 GUI.updater = function(self, ...)
     local t = {...}
@@ -43,7 +42,39 @@ GUI:draw()
 GUI:update(200, 200)
 GUI:draw()
 
+print '----------COLORS----------'
 local r2 = UI.Color(red)
 print(red, r2, r2:toHex())
 print(UI.Color(1, 2, 3, 4):toHex())
 print(UI.Color("#abcdef"):toRGBA())
+
+
+print '----------FRAMES----------'
+f1 =
+    UI(
+    {origin = {x = 0, y = 0}, size = {x = 800, y = 600}},
+    {size = {x = 500, y = 500}, margin = {x = 60, y = 20}},
+    nil,
+    nil
+)
+
+f2 = UI(f1, {size = {x = 200, y = 150}, margin = 15}, nil, nil)
+f3 = UI(f2, {size = {x = 60, y = 30}, margin = 3}, nil, nil)
+
+local function drawAABB(AABB, c)
+    print(AABB:getValues())
+end
+
+drawAABB(f1:getAvailAABB(), avail)
+drawAABB(f1:getAABB(), inside)
+drawAABB(f2:getAvailAABB(), avail)
+drawAABB(f2:getAABB(), inside)
+drawAABB(f3:getAvailAABB(), avail)
+drawAABB(f3:getAABB(), inside)
+
+drawAABB(f1:getAvailAABB(), avail)
+drawAABB(f1:getAABB(), inside)
+drawAABB(f2:getAvailAABB(), avail)
+drawAABB(f2:getAABB(), inside)
+drawAABB(f3:getAvailAABB(), avail)
+drawAABB(f3:getAABB(), inside)
