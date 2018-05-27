@@ -15,7 +15,7 @@ function GameLogic.clear()
     
 end
 
-function GameManager.doAction(actionName, ...)
+function GameLogic.doAction(actionName, ...)
     local action = helper.actions[actionName]
     if  action == nil or 
         helper.checkArgs(action.argsTypes, ...) or 
@@ -31,7 +31,7 @@ local function endRound()
     print("Round has been ended")
 end
 
-function GameLogic.endTurn()
+local function endTurn()
     _curUnitIdx = _curUnitIdx + 1
     if _curUnitIdx > #_units then
         _curUnitIdx = 1
@@ -39,8 +39,9 @@ function GameLogic.endTurn()
     end
     _curUnit = _units[_curUnitIdx]
 end
+helper.addAction("endTurn", endTurn, {}, 0)
 
-function GameLogic.makeMove(x, y)
+local function move(x, y)
     if map.isMovable(x, y) and map.distance(_curUnit.x, _curUnit.y, x, y) == 1 then
         map.removeActor(_curUnit)
         _curUnit.setPos(x, y)
@@ -49,7 +50,6 @@ function GameLogic.makeMove(x, y)
     end
     return false
 end
-
-helper.addAction("MOVE", GameLogic.makeMove, {"number", "number"}, 1)
+helper.addAction("move", makeMove, {"number", "number"}, 1)
 
 return GameLogic

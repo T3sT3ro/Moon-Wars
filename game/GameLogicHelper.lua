@@ -1,7 +1,7 @@
 local GameLogicHelper = {}
 
 GameLogicHelper.actions = {}
-local function addAction(name, callback, argsTypes, neededPoints)
+function GameLogicHelper.addAction(name, callback, argsTypes, neededPoints)
     local action = {
         name = name,
         callback = callback,
@@ -9,10 +9,6 @@ local function addAction(name, callback, argsTypes, neededPoints)
         neededPoints = neededPoints
     }
     GameLogicHelper.actions[name] = action
-end
-
-function GameLogicHelper.loadActions()
-    
 end
 
 function GameLogicHelper.checkArgs(argsTypes, ...)
