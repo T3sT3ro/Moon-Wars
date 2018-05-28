@@ -19,7 +19,7 @@ UI.Typeassert =
             str = key .. ":"
         end
         if type(pattern) == "function" then
-            str = str .. "(predicate call returning true)"
+            str = str .. "(lambda: val -> boolean)"
         elseif type(pattern) == "table" and pattern[1] == "ANY" then
             local p = {}
             for k, v in pairs(pattern) do
@@ -53,6 +53,7 @@ UI.Typeassert =
         return string.format("Typeassert: got '%s' expected '%s'", type(val), TP_tostr(expected, key))
     end
 
+    -- TODO: result as pattern matched in format '0.5.1' for 'ANY' modifiers and 0 for simple pattern
     local function TP_assert(val, pattern, key)
         if type(pattern) == "function" then
             local ok
@@ -248,25 +249,48 @@ UI.AABB =
     )
 end)()
 
--- New UI elements must have parent explicitly describing size and origin relative to window upper-left corner.
---- For sub elements it is sufficient to pass parent element.
---- For toplevel element a container box must be specified, so that it will know where on screen it should be
+-- For toplevel element parent can be set to table of four numbers desribing on-window position and size.
+---- if not specified, parent is set to {0,0,0,0}
+-- data hold all subclass variables, nothing should be stored directly in UI
+-- style
 
 function UI.new(parent, style, flags, data)
     UI.Typeassert(
         parent,
         {
             "ANY",
-            {style = {origin = {x = "number", y = "number"}, size = {x = "number", y = "number"}}},
-            {origin = {x = "number", y = "number"}, size = {x = "number", y = "number"}}
+            "nil", -- parent not specified #1
+            function(o) -- other UI element #2
+                UI.isUI(o)
+            end,
+            {"number", "number", "number", "number"}, -- short declaration for origin, size #3
+            {
+                -- explicit toplevel container direct declaration with style and origin, size #4
+                style = {
+                    origin = {x = "number", y = "number"},
+                    size = {x = "number", y = "number"}
+                },
+                cursor = {"ANY", "nil", {x = "number", y = "number"}}
+            }
         }
     )
-    if parent.style == nil then
-        parent.style = parent
-    end -- parent is toplevel -> parent.style.origin === parent.origin
     UI.Typeassert(flags, {"ANY", "nil", "table"})
     UI.Typeassert(style, {"ANY", "nil", "table"})
     UI.Typeassert(data, {"ANY", "nil", "table"})
+
+    -- toplevel setup
+    if not UI.isUI(parent) then
+        parent = parent or {0, 0, 0, 0} -- #1
+        if parent[1] then
+            parent.style = {origin = {x = parent[1], y = parent[2]}, size = {x = parent[3], y = parent[4]}}
+            parent[1], parent[2], parent[3], parent[4] = nil, nil, nil, nil
+        end -- #3
+        parent.cursor = parent.cursor or {x = parent.style.origin.x, y = parent.style.origin.y}
+        -- 1:LMB 2:RMB 3:MMB
+        parent.click = {{start = nil, stop = nil}, {start = nil, stop = nil}, {start = nil, stop = nil}}
+        parent.toplevel = parent -- for simplicity set toplevel to itself
+    end
+    -- parent is another UI element #2
 
     style = style or {}
     style.origin = style.origin or {x = 0, y = 0} -- can be negative
@@ -309,14 +333,15 @@ function UI.new(parent, style, flags, data)
             end
         }
     )
-    style.allign = style.allign or {x = "center", y = "center"}
-    style.grow = style.grow or {x = false, y = false}
+    style.allign = style.allign or {x = "center", y = "center"} -- TODO: allign in parent object used to update size and offset
+    style.grow = style.grow or {x = false, y = false} -- TODO: on true will request maximum availabe size
     style.color = style.color or UI.Color("#3F3F3F80")
-    style.z_index = style.z_index or 0 -- higher means on top
+    style.z_index = style.z_index or 0 -- higher means on top TODO:
 
-    flags = {}
+    flags = flags or {}
     flags.keepFocus = flags.keepFocus or false -- will keep focus until dropFocus() is not
     flags.clickThru = flags.clickThru or false -- true if click
+    -- TODO: allowOverflow by ID's list and skipping parent's on path
     flags.allowOverflow = flags.allowOverflow or false -- true if it can bypass inner box scissors
     flags.draggable = flags.draggable or false -- dragged by margin and all pass-thru inner elements
     flags.hidden = flags.hidden or false
@@ -334,12 +359,12 @@ function UI.new(parent, style, flags, data)
             ID = UI.nextID(),
             focused = false,
             hovered = false,
-            cursor = {x = 0, y = 0}, -- relative to upper-left corner of available draw area 
             updater = function(self, ...)
             end,
-            renderer = function(self, ...) -- 
+            renderer = function(self, ...) --
             end,
             parent = parent,
+            toplevel = parent.toplevel
         },
         UI
     )
@@ -388,6 +413,9 @@ end
 function UI:moveLayerDown()
     self.style.z_index = self.style.z_index - 1
 end
+
+
+
 -- return origin relative to window top left corner
 function UI:getOrigin()
     local ps = self.parent.style
@@ -395,7 +423,8 @@ function UI:getOrigin()
         return {x = ps.origin.x, y = ps.origin.y}
     else
         local origin = self.parent:getOrigin()
-        origin.x, origin.y = origin.x + max(ps.margin.left, 0), origin.y + max(ps.margin.up, 0)
+        origin.x = self.style.origin.x + origin.x + max(ps.margin.left, 0)
+        origin.y = self.style.origin.y + origin.y + max(ps.margin.up, 0)
         return origin
     end
 end
@@ -406,12 +435,16 @@ function UI:getAvailAABB()
     if not UI.isUI(self.parent) then -- main box container
         return UI.AABB(ps.origin.x, ps.origin.y, ps.origin.x + ps.size.x, ps.origin.y + ps.size.y)
     else
+        if self.parent.flags.allowOverflow then
+            return self.parent:getAvailAABB()
+        end
         local AABB = self.parent:getAABB()
         AABB:contract("left", ps.margin.left)
         AABB:contract("up", ps.margin.up)
         AABB:contract("right", ps.margin.right)
         AABB:contract("down", ps.margin.down)
-        return AABB:cut(self.parent:getAvailAABB())
+        AABB = AABB:cut(self.parent:getAvailAABB())
+        return AABB
     end
 end
 
@@ -422,8 +455,39 @@ function UI:getAABB()
 end
 
 -- returns real bounding box of element acording to available AABB and requested AABB
-function UI:getRealAABB() 
+function UI:getRealAABB()
     return self:getAABB():cut(self:getAvailAABB())
+end
+
+
+
+-- Assumption with cursor is that it points to objects requested area
+---- because object may draw anything it wants inside area it would have
+
+-- sets cursor relative to items AABB corner
+function UI:setCursor(x, y)
+    UI.Typeassert({x, y}, {'ANY', {'number', 'number'}, {{x='number',y='number'}}})
+    if type(x) == 'table' then x, y = x.x, x.y end
+    local AABB = self:getAABB()
+    self.toplevel.cursor.x, self.toplevel.cursor.y = AABB[1].x + x, AABB[1].y + y
+end
+
+-- returns cursor relative to AABB - would be inverse transformation as setCursor -> {x, y} === getCursor(setCursor(x, y))
+function UI:getCursor()
+    local AABB = self:getAABB()
+    return {x = self.toplevel.cursor.x - AABB[1].x, y = self.toplevel.cursor.y - AABB[1].y}
+end
+
+-- sets cursor to absolute values on window - can be used to set to aval AABB
+function UI:setRawCursor(x, y)
+    UI.Typeassert({x, y}, {'ANY', {'number', 'number'}, {{x='number',y='number'}}})
+    if type(x) == 'table' then x, y = x.x, x.y end
+    self.toplevel.cursor.x, self.toplevel.cursor.y = x, y
+end
+
+-- return cursor relative to window (0,0), default pointing to corner of available draw area
+function UI:getRawCursor()
+    return {x = self.toplevel.cursor.x, y = self.toplevel.cursor.y}
 end
 
 -------------------------------------------------------------------------------------
