@@ -7,7 +7,7 @@ function ResourceManager.init(resourcesFolderPath)
         local dotPos = file:find("%.")
         local assetName = file:sub(1, dotPos-1)
         local extension = file:sub(dotPos+1)
-        ResourceManager.load(assetName, extension, resourcesFolderPath)
+        ResourceManager.load(assetName, extension, resourcesFolderPath, true)
     end
 end
 
@@ -15,13 +15,16 @@ function ResourceManager.clear()
     _assets = {}
 end
 
-function ResourceManager.load(assetName, extension, path)
+function ResourceManager.load(assetName, extension, path, notShowError)
     path = path or ""
     local fullPath = path .. "/" .. assetName .. "." .. extension
-    local asset = love.graphics.newImage(fullPath)
-
-    print("Asset: " .. assetName .. " loaded from path: " .. fullPath)
-    _assets[assetName] = asset
+    local isOpen, asset = pcall(love.graphics.newImage, fullPath)
+    if isOpen then
+        print("Asset: " .. assetName .. " loaded from path: " .. fullPath)
+        _assets[assetName] = asset
+    elseif not notShowError then
+        print("Asset: " .. assetName .. " at path: " .. fullPath .. " not open because: " .. asset)
+    end
 end
 
 function ResourceManager.unloadAsset(assetName)
