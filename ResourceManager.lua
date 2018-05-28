@@ -1,13 +1,33 @@
 local ResourceManager = {}
 local _assets = {}
+local _patterns = {image = {"png", "jpg", "bmp"}, font = {"ttf", "fnt"}, script = {"lua"}, AI = {"AI.lua"}}
 
 function ResourceManager.init(resourcesFolderPath)
-    local assets = love.filesystem.getDirectoryItems(resourcesFolderPath)
+    ResourceManager.loadDir(resourcesFolderPath)
+end
+
+function ResourceManager.loadDir(path, assetPrefix)
+    local assets = love.filesystem.getDirectoryItems(path)
     for _, file in ipairs(assets) do
-        local dotPos = file:find("%.")
-        local assetName = file:sub(1, dotPos-1)
-        local extension = file:sub(dotPos+1)
-        ResourceManager.load(assetName, extension, resourcesFolderPath, true)
+        -- file patterns
+
+        if love.filesystem.getInfo(path .. "/" .. file).type == "directory" then -- load directory
+            ResourceManager.loadDir(path .. "/" .. file, (assetPrefix and assetPrefix .. "." .. file) or file)
+        else -- load file
+            for ftype, extensions in pairs(_patterns) do
+                for _, ext in pairs(extensions) do
+                    local fpath
+                    local fname
+                    local fext
+                    fpath, fname, fext = string.match(path .. "/" .. file, "(.*)[/\\]([^/\\]-)%.(" .. ext .. ")$")
+                    -- [prefix.]name
+
+                    -- in place oneline if
+                    local assetName = not fname or ((assetPrefix and assetPrefix .. "." .. fname) or fname)
+                    fpath = not fpath or ResourceManager.load(assetName, fname, fext, fpath, ftype) -- match if fpath ~= nil
+                end
+            end
+        end
     end
 end
 
@@ -15,15 +35,33 @@ function ResourceManager.clear()
     _assets = {}
 end
 
-function ResourceManager.load(assetName, extension, path, notShowError)
-    path = path or ""
-    local fullPath = path .. "/" .. assetName .. "." .. extension
-    local isOpen, asset = pcall(love.graphics.newImage, fullPath)
-    if isOpen then
-        print("Asset: " .. assetName .. " loaded from path: " .. fullPath)
+function ResourceManager.load(assetName, fname, fext, fpath, type, ...)
+    fpath = fpath or ""
+    local path = fpath .. "/" .. fname .. "." .. fext
+
+    local isOK
+    local asset
+
+    if type == "image" then -- images
+        isOK, asset = pcall(love.graphics.newImage, path, ...)
+    elseif type == "font" then -- fonts with size as optional argument (defaults to 12)
+        isOK, asset = pcall(love.graphics.newFont, path, ...)
+    elseif type == "script" then -- FIXME: same as AI but without sandboxing
+    elseif type == "AI" then -- FIXME: @Bartosz Rudzki
+        local file = loadfile(path, "bt", {print = print})
+         -- loading with specified enviroment
+        isOk, asset = pcall(file) -- calling script
+        if not isOk then
+            print("ResourceManager: script loading error: " .. tostring(ret))
+            return
+        end
+    end
+
+    if isOK then
+        print("ResourceManager: loaded '" .. assetName .. "' from '" .. path .. "'.")
         _assets[assetName] = asset
-    elseif not notShowError then
-        print("Asset: " .. assetName .. " at path: " .. fullPath .. " not open because: " .. asset)
+    else
+        print("ResourceManager: couldn't open asset '" .. assetName .. "' from '" .. path .. "'. Details: "..tostring(asset))
     end
 end
 
@@ -33,19 +71,10 @@ end
 
 function ResourceManager.get(assetName)
     local asset = _assets[assetName]
-    if asset == nil then error("Asset with name " .. assetName .. " was not loaded!") end
-    return asset
-end
-
-function ResourceManager.loadAI()
-    local file = loadfile("AItest.lua", "bt", {print = print }) -- loading with specified enviroment
-    local isOk, ai = pcall(file) -- calling script
-    if not isOk then
-        print("AI loading failed, error: " .. ai)
-        return
+    if asset == nil then
+        error("ResourceManager: asset '" .. assetName .. "' wasn't loaded!")
     end
-
-    print(pcall(ai.foo)) -- calling function in script
+    return asset
 end
 
 return ResourceManager
