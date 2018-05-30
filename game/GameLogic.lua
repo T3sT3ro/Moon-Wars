@@ -77,6 +77,43 @@ local function move(x, y)
     end
     return false
 end
-helper.addAction("move", makeMove, {"number", "number"}, 1)
+helper.addAction("move", move, {"number", "number"}, 1)
+
+local function attack(x, y)
+    if map.distance(_curUnit.x, _curUnit.y, x, y) <= _curUnit.range then
+        local enemy = map.getActor(x, y, "health") -- look for actor with "health" field
+        if enemy == nil or enemy.playerId == _curUnit.playerId then
+            return false
+        end
+
+        enemy.health = enemy.health - _curUnit.attack
+        if enemy.health <= 0 then
+            enemy.die()
+        end
+        return true
+    end
+    return false
+end
+helper.addAction("attack", attack, {"number", "number"}, 1)
+
+local function craft(name)
+    return true
+end
+helper.addAction("craft", craft, {"string"}, 1)
+
+local function pickup(name, x, y)
+    return true
+end
+helper.addAction("pickup", pickup, {"string", "number", "number"}, 1)
+
+local function drop(name)
+    return true
+end
+helper.addAction("drop", drop, {"string"}, 0)
+
+local function use(name)
+    return true
+end
+helper.addAction("use", use, {"string"}, 1)
 
 return GameLogic
