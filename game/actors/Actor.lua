@@ -28,6 +28,11 @@ function Actor:draw()
     love.graphics.draw(self.asset, self.x, self.y)
 end
 
+function Actor:setPos(x, y)
+    self.x = x
+    self.y = y
+end
+
 function Actor:debugInfo()
     print("Actor info. Id: " .. self.id)
 end

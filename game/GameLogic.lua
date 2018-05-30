@@ -10,7 +10,7 @@ local _curUnitIdx = 0
 local _curUnit = nil
 local _curActionPoints = 0
 local _actors = {}
-local _units = {}
+local _unitsInOrder = {}
 
 local function createActor(typeName, playerId, nameAsset)
     local actor = Factory.create(typeName, playerId, nameAsset)
@@ -35,11 +35,20 @@ function GameLogic.init()
     local initActors = { createInitActors(1), createInitActors(2) }
     map.addInitActors(initActors)
 
-    _units = _actors["Unit"]
+    local addedUnits = {0, 0}
+    for _, unit in ipairs(_actors["Units"]) do
+        local added = addedUnits[unit.playerId]
+        local orderNum = unit.playerId + 2 * added
+        _unitsInOrder[orderNum] = unit
+        addedUnits[unit.playerId] = added + 1
+    end
+    _curUnitIdx = 1
+    _curUnit = _unitsInOrder[_curUnitIdx]
 end
 
 function GameLogic.clear()
     _actors = {}
+    _unitsOrder = {}
 end
 
 function GameLogic.doAction(actionName, ...)
@@ -55,16 +64,16 @@ function GameLogic.doAction(actionName, ...)
 end
 
 local function endRound()
-    print("Round has been ended")
+    print("Round has ended")
 end
 
 local function endTurn()
     _curUnitIdx = _curUnitIdx + 1
-    if _curUnitIdx > #_units then
+    if _curUnitIdx > #_unitsInOrder then
         _curUnitIdx = 1
         endRound()
     end
-    _curUnit = _units[_curUnitIdx]
+    _curUnit = _unitsInOrder[_curUnitIdx]
 end
 helper.addAction("endTurn", endTurn, {}, 0)
 
@@ -96,7 +105,22 @@ local function attack(x, y)
 end
 helper.addAction("attack", attack, {"number", "number"}, 1)
 
+local function getNexus(playerId)
+    local nexuses = _actors["Nexus"]
+    for _, nexus in ipairs(nexuses) do
+        if nexus.playerId == playerId then
+            return nexus
+        end
+    end
+    return nil
+end
+
 local function craft(name)
+    local nexus = getNexus(_curUnit.playerId)
+    if map.distance(nexus.x, nexus.y, _curUnit.x, _curUnit.y) > 1 then
+        return false
+    end
+
     return true
 end
 helper.addAction("craft", craft, {"string"}, 1)
@@ -104,7 +128,7 @@ helper.addAction("craft", craft, {"string"}, 1)
 local function pickup(name, x, y)
     return true
 end
-helper.addAction("pickup", pickup, {"string", "number", "number"}, 1)
+helper.addAction("pickup", pickup, {"string", "number", "number"}, 0)
 
 local function drop(name)
     return true
@@ -114,6 +138,6 @@ helper.addAction("drop", drop, {"string"}, 0)
 local function use(name)
     return true
 end
-helper.addAction("use", use, {"string"}, 1)
+helper.addAction("use", use, {"string"}, 0)
 
 return GameLogic
