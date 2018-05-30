@@ -1,6 +1,6 @@
 local logic = require "game/GameLogic"
 local map = require "game/GameMap"
-
+local Unit = require "game/actors/Unit"
 local GameManager = {}
 
 function GameManager.init()
