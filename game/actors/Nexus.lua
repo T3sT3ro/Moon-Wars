@@ -1,13 +1,13 @@
 local Actor = require "game/actors/Actor"
 
-local Unit = Actor:new({type = "Unit"})
+local Nexus = Actor:new({type = "Nexus"})
 
-function Unit:init(assetName)
+function Nexus:init(assetName)
     Actor.init(self, assetName)
 end
 
-function Unit:debugInfo()
+function Nexus:debugInfo()
     Actor.debugInfo(self) 
 end
 
-return Unit
+return Nexus

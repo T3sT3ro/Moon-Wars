@@ -12,14 +12,13 @@ local nextId = nextIdGenerator()
 
 local Actor = {x = 0, y = 0}
 function Actor:new(o)
-    o = o or {}  
+    o = o or {} 
     self.__index = self
     setmetatable(o, self)
     return o
 end
 
 function Actor:init(assetName)
-    print("actor init")
     self.id = nextId()
     self.asset = RM.get(assetName)
 end

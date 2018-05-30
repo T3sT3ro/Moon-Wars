@@ -1,7 +1,6 @@
 local logic = require "game/GameLogic"
 local map = require "game/GameMap"
 local Unit = require "game/actors/Unit"
-local SuperUnit = require "game/actors/SuperUnit"
 local GameManager = {}
 
 local u1
@@ -10,10 +9,10 @@ function GameManager.init()
     logic.init()
     map.init()
 
-    u1 = SuperUnit:new({x = 100})
-    u1:init("dagger", "u1")
+    u1 = Unit:new({x = 100})
+    u1:init("dagger")
     u2 = Unit:new({y = 300})
-    u2:init("dagger2", "u2")
+    u2:init("dagger2")
 
     u1:debugInfo()
     u2:debugInfo()
