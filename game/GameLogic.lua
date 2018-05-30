@@ -5,6 +5,7 @@ local Unit = require "game/actors/Unit"
 local Factory = require "game/actors/ActorFactory"
 
 local GameLogic = {}
+
 local _curUnitIdx = 0
 local _curUnit = nil
 local _curActionPoints = 0
@@ -22,12 +23,12 @@ local function createActor(typeName, playerId, nameAsset)
 end
 
 local function createInitActors(playerId)
-    local setup = {}
-    table.insert(setup, createActor("Nexus", playerId, "nexus_red"))
+    local initActors = {}
+    table.insert(initActors, createActor("Nexus", playerId, "nexus_red"))
     for i=1, 4 do
-        table.insert(setup, createActor("Unit", playerId, "unit"))
+        table.insert(initActors, createActor("Unit", playerId, "unit"))
     end
-    return setup
+    return initActors
 end
 
 function GameLogic.init()
