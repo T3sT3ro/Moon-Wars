@@ -2,10 +2,13 @@ local RM = require "ResourceManager"
 
 local GameMap = {}
 
-function GameMap.init(initActors)
+function GameMap.init()
+      
+end
+
+function GameMap.addInitActors(initActors)
     player1Actors = initActors[1] -- contains Nexus and Units
     player2Actors = initActors[2]
-    
 end
 
 function GameMap.clear()

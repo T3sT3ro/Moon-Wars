@@ -11,30 +11,30 @@ local _curActionPoints = 0
 local _actors = {}
 local _units = {}
 
-function GameLogic.init()
-    local initActors = { createInitActors(1), createInitActors(2) }
-    map.init(initActors)
-
-    _units = _actors["Unit"]
-end
-
-local function createInitActors(playerId)
-    local setup = {}
-    setup:insert(createActor("Nexus", playerId, "nexus"))
-    for i=1, 4 do
-        setup:insert(createActor("Unit", playerId, "unit"))
-    end
-    return setup
-end
-
 local function createActor(typeName, playerId, nameAsset)
-    local actor = Factory.crate(typeName, playerId, nameAsset)
+    local actor = Factory.create(typeName, playerId, nameAsset)
     if _actors[actor.type] == nil then
         _actors[actor.type] = {}
     end
 
-    _actors[actor.type]:insert(actor)
+    table.insert(_actors[actor.type], actor)
     return actor
+end
+
+local function createInitActors(playerId)
+    local setup = {}
+    table.insert(setup, createActor("Nexus", playerId, "nexus_red"))
+    for i=1, 4 do
+        table.insert(setup, createActor("Unit", playerId, "unit"))
+    end
+    return setup
+end
+
+function GameLogic.init()
+    local initActors = { createInitActors(1), createInitActors(2) }
+    map.addInitActors(initActors)
+
+    _units = _actors["Unit"]
 end
 
 function GameLogic.clear()
