@@ -18,8 +18,9 @@ function Actor:new(o)
     return o
 end
 
-function Actor:init(assetName)
+function Actor:init(playerId, assetName)
     self.id = nextId()
+    self.playerId = playerId
     self.asset = RM.get(assetName)
 end
 

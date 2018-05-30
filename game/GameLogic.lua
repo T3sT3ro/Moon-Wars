@@ -1,18 +1,44 @@
 local helper = require "game/GameLogicHelper"
 local map = require "game/GameMap"
+local Nexus = require "game/actors/Nexus"
+local Unit = require "game/actors/Unit"
+local Factory = require "game/actors/ActorFactory"
 
 local GameLogic = {}
-local _units = {}
 local _curUnitIdx = 0
 local _curUnit = nil
 local _curActionPoints = 0
+local _actors = {}
+local _units = {}
 
 function GameLogic.init()
-    
+    local initActors = { createInitActors(1), createInitActors(2) }
+    map.init(initActors)
+
+    _units = _actors["Unit"]
+end
+
+local function createInitActors(playerId)
+    local setup = {}
+    setup:insert(createActor("Nexus", playerId, "nexus"))
+    for i=1, 4 do
+        setup:insert(createActor("Unit", playerId, "unit"))
+    end
+    return setup
+end
+
+local function createActor(typeName, playerId, nameAsset)
+    local actor = Factory.crate(typeName, playerId, nameAsset)
+    if _actors[actor.type] == nil then
+        _actors[actor.type] = {}
+    end
+
+    _actors[actor.type]:insert(actor)
+    return actor
 end
 
 function GameLogic.clear()
-    
+    _actors = {}
 end
 
 function GameLogic.doAction(actionName, ...)
