@@ -4,13 +4,13 @@ local Unit = Actor:new({type = "Unit"})
 
 function Unit:init(assetName, name)
     print("unit init")
-    self:base().init(self, assetName)
+    Actor.init(self, assetName)
     self.name = name
 end
 
 function Unit:debugInfo()
     print("Unit info: Name: " .. tostring(self.name))
-    self:base().debugInfo(self) 
+    Actor.debugInfo(self) 
 end
 
 return Unit

@@ -18,10 +18,6 @@ function Actor:new(o)
     return o
 end
 
-function Actor:base()
-    return getmetatable(getmetatable(self))
-end
-
 function Actor:init(assetName)
     print("actor init")
     self.id = nextId()
