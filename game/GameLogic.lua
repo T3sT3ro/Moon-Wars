@@ -24,10 +24,19 @@ end
 
 local function createInitActors(playerId)
     local initActors = {}
-    table.insert(initActors, createActor("Nexus", playerId, "nexus_red"))
-    for i=1, 4 do
-        table.insert(initActors, createActor("Unit", playerId, "unit"))
+    local add = function (amount, typeName, playerId, name)
+        while amount > 0 do
+            table.insert(initActors, createActor(typeName, playerId, name))
+            amount = amount - 1
+        end
     end
+
+    add(1, "Nexus", playerId, "nexus_red")
+    add(4, "Unit", playerId, "unit")
+    add(3, "Resource", playerId, "tree")
+    add(2, "Resource", playerId, "rock")
+    add(1, "Resource", playerId, "crystalMine")
+    
     return initActors
 end
 

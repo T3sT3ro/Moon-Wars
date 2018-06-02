@@ -39,22 +39,4 @@ function Actor:debugInfo()
     print("Actor info. Id: " .. self.id)
 end
 
-local function getConfig(configs, name)
-    for _, config in ipairs(configs) do
-        if config.name == name then
-            return config
-        end
-    end
-    error("config not found for name: " .. name)
-    return nil
-end
-
-function Actor.getItemConfig(name)
-    return getConfig(Items, name)
-end
-
-function Actor.getResourceConfig(name)
-    return getConfig(Resources, name)
-end
-
 return Actor
