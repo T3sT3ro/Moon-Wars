@@ -13,13 +13,17 @@ local typeCreators =
     Resource = Resource
 }
 
-function ActorFactory.create(typeName, playerId, assetName)
+function ActorFactory.create(typeName, playerId, config)
+    if type(config) ~= "table" then
+        config = {name = config}
+    end
+    
     if typeCreators[typeName] == nil then 
         error("Bad actor type: " .. typeName)
     end
 
     local o = typeCreators[typeName]:new()
-    o:init(playerId, assetName)
+    o:init(playerId, config)
     return o
 end
 
