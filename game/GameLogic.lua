@@ -22,6 +22,23 @@ local function createActor(typeName, playerId, nameAsset)
     return actor
 end
 
+local function addInitActor(initActors, amount, typeName, playerId, name)
+    while amount > 0 do
+        table.insert(initActors, createActor(typeName, playerId, name))
+        amount = amount - 1
+    end
+end
+
+local function createInitNeutralActors(neutralId)
+    local initActors = {}
+
+    addInitActor(initActors, 1, "Item", neutralId, "magicRing")
+    addInitActor(initActors, 1, "Item", neutralId, "bow")
+    addInitActor(initActors, 1, "Item", neutralId, "sword")
+
+    return initActors
+end
+
 local function createInitActors(playerId)
     local initActors = {}
     local add = function (amount, typeName, playerId, name)
@@ -31,18 +48,18 @@ local function createInitActors(playerId)
         end
     end
 
-    add(1, "Nexus", playerId, "nexus_red")
-    add(4, "Unit", playerId, "unit")
-    add(3, "Resource", playerId, "tree")
-    add(2, "Resource", playerId, "rock")
-    add(1, "Resource", playerId, "crystalMine")
-    
+    addInitActor(initActors, 1, "Nexus", playerId, "nexus_red")
+    addInitActor(initActors, 4, "Unit", playerId, "unit")
+    addInitActor(initActors, 3, "Resource", playerId, "tree")
+    addInitActor(initActors, 2, "Resource", playerId, "rock")
+    addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
+
     return initActors
 end
 
 function GameLogic.init()
-    local initActors = { createInitActors(1), createInitActors(2) }
-    map.addInitActors(initActors)
+    local initActors = { createInitNeutralActors(0), createInitActors(1), createInitActors(2) }
+    map.addInitActor(initActors)
 
     _units = _actors["Unit"]
 end
