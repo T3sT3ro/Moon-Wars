@@ -128,16 +128,35 @@ end
 helper.addAction("craft", craft, {"string"}, 1)
 
 local function pickup(name, x, y)
+    local item = map.getActor(name, x, y)
+    if item == nil then
+        return false
+    end
+
+    map.removeActor(item)
+    _curUnit:addToEq(item)
     return true
 end
 helper.addAction("pickup", pickup, {"string", "number", "number"}, 1)
 
 local function drop(name)
+    if not _curUnit.hasItem(name) then
+        return false
+    end
+
+    local item = _curUnit:getItem(name)
+    item:setPos(_curUnit.x, _curUnit.y)
+    map.addActor(item)
     return true
 end
 helper.addAction("drop", drop, {"string"}, 0)
 
 local function use(name)
+    if not _curUnit:hasItem(name) then
+        return false
+    end
+
+    _curUnit:useItem(name)
     return true
 end
 helper.addAction("use", use, {"string"}, 1)
