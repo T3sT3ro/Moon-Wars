@@ -7,8 +7,9 @@ function GameMap.init()
 end
 
 function GameMap.addInitActors(initActors)
-    player1Actors = initActors[1] -- contains Nexus and Units
-    player2Actors = initActors[2]
+    local neutralActors = initActors[1]
+    local player1Actors = initActors[2] -- contains Nexus and Units
+    local player2Actors = initActors[3]
 end
 
 function GameMap.clear()

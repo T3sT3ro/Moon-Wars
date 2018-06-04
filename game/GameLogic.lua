@@ -22,18 +22,44 @@ local function createActor(typeName, playerId, nameAsset)
     return actor
 end
 
+local function addInitActor(initActors, amount, typeName, playerId, name)
+    while amount > 0 do
+        table.insert(initActors, createActor(typeName, playerId, name))
+        amount = amount - 1
+    end
+end
+
+local function createInitNeutralActors(neutralId)
+    local initActors = {}
+
+    addInitActor(initActors, 1, "Item", neutralId, "magicRing")
+    addInitActor(initActors, 1, "Item", neutralId, "bow")
+    addInitActor(initActors, 1, "Item", neutralId, "sword")
+
+    return initActors
+end
+
 local function createInitActors(playerId)
     local initActors = {}
-    table.insert(initActors, createActor("Nexus", playerId, "nexus_red"))
-    for i=1, 4 do
-        table.insert(initActors, createActor("Unit", playerId, "unit"))
+    local add = function (amount, typeName, playerId, name)
+        while amount > 0 do
+            table.insert(initActors, createActor(typeName, playerId, name))
+            amount = amount - 1
+        end
     end
+
+    addInitActor(initActors, 1, "Nexus", playerId, "nexus_red")
+    addInitActor(initActors, 4, "Unit", playerId, "unit")
+    addInitActor(initActors, 3, "Resource", playerId, "tree")
+    addInitActor(initActors, 2, "Resource", playerId, "rock")
+    addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
+
     return initActors
 end
 
 function GameLogic.init()
-    local initActors = { createInitActors(1), createInitActors(2) }
-    map.addInitActors(initActors)
+    local initActors = { createInitNeutralActors(0), createInitActors(1), createInitActors(2) }
+    map.addInitActor(initActors)
 
     local addedUnits = {0, 0}
     for _, unit in ipairs(_actors["Units"]) do
@@ -126,16 +152,35 @@ end
 helper.addAction("craft", craft, {"string"}, 1)
 
 local function pickup(name, x, y)
+    local item = map.getActor(name, x, y)
+    if item == nil then
+        return false
+    end
+
+    map.removeActor(item)
+    _curUnit:addToEq(item)
     return true
 end
 helper.addAction("pickup", pickup, {"string", "number", "number"}, 0)
 
 local function drop(name)
+    if not _curUnit.hasItem(name) then
+        return false
+    end
+
+    local item = _curUnit:getItem(name)
+    item:setPos(_curUnit.x, _curUnit.y)
+    map.addActor(item)
     return true
 end
 helper.addAction("drop", drop, {"string"}, 0)
 
 local function use(name)
+    if not _curUnit:hasItem(name) then
+        return false
+    end
+
+    _curUnit:useItem(name)
     return true
 end
 helper.addAction("use", use, {"string"}, 0)
