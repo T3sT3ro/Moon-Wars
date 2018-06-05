@@ -1,501 +1,161 @@
-local min = math.min
-local max = math.max
-local floor = math.floor
-
 local UI = {UUIDseed = -1}
+package.loaded[...] = UI
+
+local min, max = math.min, math.max
+
+Typeassert = require "utils/Typeassert"
+AABB = require "UI/AABB"
+Color = require "UI/Color"
+
 UI.__index = UI
 
-UI.Typeassert =
-    (function()
-    -- dynamic typechecking submodule
-    -- produces error on fail and true on success, so it can be used as pattern matching for types
-    -- recognizes simple types, tables of simple types and values satisfying predicate
-    -- to accept any value for value, set pattern to nil
-    local Typeassert = {}
+UI.theme = {
+    Color("#63002d"),
+    Color("#8b003f"),
+    Color("#c1404d"),
+    Color("#ffa535"),
+    Color("#ffcd32"),
+    font = love.graphics.newFont(14)
+}
 
-    local function TP_tostr(pattern, key)
-        local str = ""
-        if key then
-            str = key .. ":"
-        end
-        if type(pattern) == "function" then
-            str = str .. "(lambda: val -> boolean)"
-        elseif type(pattern) == "table" and pattern[1] == "ANY" then
-            local p = {}
-            for k, v in pairs(pattern) do
-                if k ~= 1 then
-                    if type(k) == "number" then
-                        p[k - 1] = TP_tostr(v)
-                    else
-                        p[k] = TP_tostr(v)
-                    end
-                end
-            end
-            str = str .. "[" .. table.concat(p, "  |  ") .. "]"
-        elseif type(pattern) == "table" then
-            local t = {}
-            for k, v in pairs(pattern) do
-                t[#t + 1] = TP_tostr(v, k)
-            end
-            str = str .. "{" .. table.concat(t, ", ") .. "}"
-        else
-            str = str .. pattern
-        end
-        --[[
-        if #str > 140 then
-            return string.sub(s, 1, 100) .. "..."
-        end
-        --]]
-        return str
-    end
-
-    local function TP_errmsg(expected, val, key)
-        return string.format("Typeassert: got '%s' expected '%s'", type(val), TP_tostr(expected, key))
-    end
-
-    -- TODO: result as pattern matched in format '0.5.1' for 'ANY' modifiers and 0 for simple pattern
-    local function TP_assert(val, pattern, key)
-        if type(pattern) == "function" then
-            local ok
-            local ret
-            ok, ret = pcall(pattern, val)
-            if not (ok and ret) then
-                return TP_errmsg(pattern, val, key)
-            end
-        elseif type(pattern) == "table" then
-            if pattern[1] == "ANY" then
-                for i = 2, #pattern do
-                    local err = TP_assert(val, pattern[i])
-                    if not err then
-                        return nil
-                    end
-                end
-                return TP_errmsg(TP_tostr(pattern), val, key)
-            elseif type(val) == "table" then
-                for k, v in pairs(pattern) do
-                    local err = TP_assert(rawget(val, k), v, k)
-                    if err then
-                        return err
-                    end
-                end
-            else
-                return TP_errmsg(pattern, val, key)
-            end
-        elseif type(val) ~= pattern then
-            return TP_errmsg(pattern, val, key)
-        end
-    end
-
-    return setmetatable(
-        Typeassert,
-        {
-            __call = function(_, ...)
-                local err = TP_assert(...)
-                if err then
-                    error(err, 2)
-                end
-                return true
-            end
-        }
-    )
-end)()
-UI.Color =
-    (function()
-    -- Color submodule
-    local Color = {}
-    Color.__index = Color
-
-    function Color.isColor(o)
-        return getmetatable(o) == Color
-    end
-
-    function Color.new(r, g, b, a)
-        if Color.isColor(r) then
-            r, g, b, a = r.r, r.g, r.b, r.a
-        end
-        r, g, b, a = (r or 0), (g or 0), (b or 0), (a or 255)
-        if type(r) == "string" then
-            local hex = r
-            r, g, b, a =
-                string.match(
-                string.upper(hex),
-                "#([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])"
-            )
-            if r == nil then
-                r, g, b = string.match(string.upper(hex), "#([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])([0-9A-F][0-9A-F])")
-                a = "FF"
-            end
-            if r == nil then
-                error("Color: malformed hex")
-            end
-            r, g, b, a = floor(("0x" .. r) + 0), floor(("0x" .. g) + 0), floor(("0x" .. b) + 0), floor(("0x" .. a) + 0)
-        end
-        if type(r) ~= "number" or type(g) ~= "number" or type(b) ~= "number" or type(a) ~= "number" then
-            error("Color: parameters r,g,b[,a] must be numbers in range [0,255], [0.0,1.0] or properly formatted hex.")
-        end
-        local t = {__index = Color, r = r % 256, g = g % 256, b = b % 256, a = a % 256}
-        return setmetatable(t, Color)
-    end
-
-    function Color:toHex()
-        return string.format("#%02x%02x%02x%02x", self.r, self.g, self.b, self.a)
-    end
-
-    function Color:toRGBA()
-        return self.r, self.g, self.b, self.a
-    end
-
-    function Color:normalized()
-        return self.r / 255, self.g / 255, self.b / 255, self.a / 255
-    end
-
-    return setmetatable(
-        Color,
-        {
-            __call = function(_, ...)
-                return Color.new(...)
-            end
-        }
-    )
-end)()
-UI.AABB =
-    (function()
-    -- Axis Alligned Bounding Box submodule
-    local AABB = {}
-    AABB.__index = AABB
-
-    function AABB.isAABB(o)
-        return getmetatable(o) == AABB
-    end
-
-    function AABB.new(x1, y1, x2, y2)
-        UI.Typeassert(
-            {x1, y1, x2, y2},
-            {
-                "ANY",
-                {"number", "number", "number", "number"}, -- #1
-                {{x = "number", y = "number"}, {x = "number", y = "number"}}, -- #2
-                function(o) -- #3
-                    return AABB.isAABB(o)
-                end -- x1 as object
-            }
-        )
-        if AABB.isAABB(x1) then -- #3
-            x1, y1, x2, y2 = x1[1].x, x1[1].y, x1[2].x, x1[2].y
-        elseif type(x1) == "table" then -- #2
-            x1, y1, x2, y2 = x1.x, x1.y, y1.x, y1.y
-        end
-        return setmetatable({{x = x1, y = y1}, {x = max(x1, x2), y = max(y1, y2)}}, AABB) -- #1
-    end
-
-    function AABB:expand(l, u, r, d)
-        UI.Typeassert({l, u, r, d}, {"ANY", {"number", "number", "number", "number"}, {"string", "number"}})
-        if type(l) == "string" then
-            if l == "left" then
-                l, u, r, d = u, 0, 0, 0
-            elseif l == "up" then
-                l, u, r, d = 0, u, 0, 0
-            elseif l == "right" then
-                l, u, r, d = 0, 0, u, 0
-            elseif l == "down" then
-                l, u, r, d = 0, 0, 0, u
-            end
-        end
-        self[1] = {x = min(self[1].x - l, self[2].x), y = min(self[1].y - u, self[2].y)}
-        self[2] = {x = max(self[2].x + r, self[1].x), y = max(self[2].y + d, self[1].y)}
-    end
-
-    -- alias to expand with negative values
-    function AABB:contract(l, u, r, d)
-        UI.Typeassert({l, u, r, d}, {"ANY", {"number", "number", "number", "number"}, {"string", "number"}})
-        if type(l) == "string" then
-            return self:expand(l, -u)
-        end
-        return self:expand(-l, -u, -r, -d)
-    end
-
-    -- intersection of two boxes
-    function AABB:cut(b2)
-        local x1 = max(self[1].x, b2[1].x)
-        local y1 = max(self[1].y, b2[1].y)
-        local x2 = max(x1, min(self[2].x, b2[2].x))
-        local y2 = max(y1, min(self[2].y, b2[2].y))
-        return AABB(x1, y1, x2, y2)
-    end
-
-    function AABB:getValues()
-        return self[1].x, self[1].y, self[2].x, self[2].y
-    end
-
-    function AABB:width()
-        return self[2].x - self[1].x
-    end
-
-    function AABB:height()
-        return self[2].y - self[1].y
-    end
-
-    function AABB:dimensions()
-        return self:width(), self:height()
-    end
-
-    return setmetatable(
-        AABB,
-        {
-            __call = function(_, ...)
-                return AABB.new(...)
-            end
-        }
-    )
-end)()
-
--- For toplevel element parent can be set to table of four numbers desribing on-window position and size.
----- if not specified, parent is set to {0,0,0,0}
--- data hold all subclass variables, nothing should be stored directly in UI
--- style
-
-function UI.new(parent, style, flags, data)
-    UI.Typeassert(
-        parent,
-        {
-            "ANY",
-            "nil", -- parent not specified #1
-            function(o) -- other UI element #2
-                UI.isUI(o)
-            end,
-            {"number", "number", "number", "number"}, -- short declaration for origin, size #3
-            {
-                -- explicit toplevel container direct declaration with style and origin, size #4
-                style = {
-                    origin = {x = "number", y = "number"},
-                    size = {x = "number", y = "number"}
-                },
-                cursor = {"ANY", "nil", {x = "number", y = "number"}}
-            }
-        }
-    )
-    UI.Typeassert(flags, {"ANY", "nil", "table"})
-    UI.Typeassert(style, {"ANY", "nil", "table"})
-    UI.Typeassert(data, {"ANY", "nil", "table"})
-
-    -- toplevel setup
-    if not UI.isUI(parent) then
-        parent = parent or {0, 0, 0, 0} -- #1
-        if parent[1] then
-            parent.style = {origin = {x = parent[1], y = parent[2]}, size = {x = parent[3], y = parent[4]}}
-            parent[1], parent[2], parent[3], parent[4] = nil, nil, nil, nil
-        end -- #3
-        parent.cursor = parent.cursor or {x = parent.style.origin.x, y = parent.style.origin.y}
-        -- 1:LMB 2:RMB 3:MMB
-        parent.click = {{start = nil, stop = nil}, {start = nil, stop = nil}, {start = nil, stop = nil}}
-        parent.toplevel = parent -- for simplicity set toplevel to itself
-    end
-    -- parent is another UI element #2
-
-    style = style or {}
-    style.origin = style.origin or {x = 0, y = 0} -- can be negative
-    style.size = style.size or {x = 0, y = 0}
-    -- negative value for marin result in margin = 0
-    style.margin = style.margin or 5
-    UI.Typeassert(
-        style.margin,
-        {
-            "ANY",
-            "number",
-            {x = "number", y = "number"},
-            {left = "number", right = "number", up = "number", down = "number"}
-        }
-    )
-
-    if type(style.margin) == "number" then
-        style.margin = {x = style.margin, y = style.margin}
-    end
-    style.margin.left = style.margin.left or style.margin.x or 5
-    style.margin.right = style.margin.right or style.margin.x or 5
-    style.margin.up = style.margin.up or style.margin.y or 5
-    style.margin.down = style.margin.down or style.margin.y or 5
-    style.margin.x, style.margin.y = nil, nil
-
-    style.margin.left = max(style.margin.left, 0)
-    style.margin.right = max(style.margin.right, 0)
-    style.margin.up = max(style.margin.up, 0)
-    style.margin.down = max(style.margin.down, 0)
-
-    setmetatable(
-        style.margin,
-        {
-            __newindex = function(margin, key, val)
-                if key == "x" then
-                    margin.left, margin.right = val, val
-                elseif key == "y" then
-                    margin.up, margin.down = val, val
-                end
-            end
-        }
-    )
-    style.allign = style.allign or {x = "center", y = "center"} -- TODO: allign in parent object used to update size and offset
-    style.grow = style.grow or {x = false, y = false} -- TODO: on true will request maximum availabe size
-    style.color = style.color or UI.Color("#3F3F3F80")
-    style.z_index = style.z_index or 0 -- higher means on top TODO:
-
-    flags = flags or {}
-    flags.keepFocus = flags.keepFocus or false -- will keep focus until dropFocus() is not
-    flags.clickThru = flags.clickThru or false -- true if click
-    -- TODO: allowOverflow by ID's list and skipping parent's on path
-    flags.allowOverflow = flags.allowOverflow or false -- true if it can bypass inner box scissors
-    flags.draggable = flags.draggable or false -- dragged by margin and all pass-thru inner elements
-    flags.hidden = flags.hidden or false
-
-    data = data or {}
-
-    local self =
-        setmetatable(
-        {
-            style = style,
-            flags = flags,
-            data = data,
-            -- internals
-            __index = UI,
-            ID = UI.nextID(),
-            focused = false,
-            hovered = false,
-            updater = function(self, ...)
-            end,
-            renderer = function(self, ...) --
-            end,
-            parent = parent,
-            toplevel = parent.toplevel
-        },
-        UI
-    )
-
-    return self
-end
-
--- if it is not UI, then this method doesn't exist so isUI() equals false
 function UI.isUI(o)
     return getmetatable(o) == UI
 end
 
-function UI.nextID() -- Next integer IDs
+function UI.isID(ID)
+    return type(ID) == "number"
+end
+
+function UI:nextID(...)
     UI.UUIDseed = UI.UUIDseed + 1
     return UI.UUIDseed
 end
 
-function UI:update(...)
-    self:updater(...)
+function UI.new(x, y, width, height)
+    local naturalPred = function(x)
+        return type(x) == "number" and x >= 0
+    end
+    Typeassert({x, y, width, height}, {naturalPred, naturalPred, naturalPred, naturalPred})
+
+    local self =
+        setmetatable(
+        {
+            _ID = UI.nextID(),
+            __index = UI,
+            widget = nil,
+            origin = {x = x, y = y}, -- on screen real dimensions
+            size = {x = width, y = height}, --- ^^^
+            cursor = {x = x, y = y} -- relative to window's top-left corner, used for drawing UI elements
+        },
+        UI
+    )
+    return self
+end
+
+function UI:setWidget(widget)
+    self.widget = widget
+    widget._parent:removeWidget(widget)
+    widget._parent = widget
+    widget._UI = self
+    self:reload()
+end
+
+function UI:update(dt, ...)
+    self.widget:update(dt, ...)
 end
 
 function UI:draw(...)
-    self:renderer(...)
-end
+    local old = {love.graphics.getScissor()}
+    love.graphics.setScissor(self.origin.x, self.origin.y, self.size.x, self.size.y)
+    local oldSetScissorFun = love.graphics.setScissor
 
-function UI:dropFocus()
-    self.focused = false
-end
-
-function UI:requestFocus()
-    self.focused = true
-end
-
-function UI:hide()
-    self.hidden = true
-end
-
-function UI:show()
-    self.hidden = false
-end
-
-function UI:moveLayerUp()
-    self.style.z_index = self.style.z_index + 1
-end
-
-function UI:moveLayerDown()
-    self.style.z_index = self.style.z_index - 1
-end
-
-
-
--- return origin relative to window top left corner
-function UI:getOrigin()
-    local ps = self.parent.style
-    if not UI.isUI(self.parent) then
-        return {x = ps.origin.x, y = ps.origin.y}
-    else
-        local origin = self.parent:getOrigin()
-        origin.x = self.style.origin.x + origin.x + max(ps.margin.left, 0)
-        origin.y = self.style.origin.y + origin.y + max(ps.margin.up, 0)
-        return origin
+    -- proxy function to always draw inside UI
+    love.graphics.setScissor = function(x, y, w, h)
+        oldSetScissorFun(self.origin.x, self.origin.y, self.size.x, self.size.y)
+        x = x and y and w and h and love.graphics.intersectScissor(x, y, w, h)
     end
+
+    self.widget:draw(...)
+    love.graphics.setScissor = oldSetScissorFun
+    love.graphics.setScissor(old[1], old[2], old[3], old[4])
 end
 
--- returns window effective draw area relative to main frame
-function UI:getAvailAABB()
-    local ps = self.parent.style
-    if not UI.isUI(self.parent) then -- main box container
-        return UI.AABB(ps.origin.x, ps.origin.y, ps.origin.x + ps.size.x, ps.origin.y + ps.size.y)
-    else
-        if self.parent.flags.allowOverflow then
-            return self.parent:getAvailAABB()
-        end
-        local AABB = self.parent:getAABB()
-        AABB:contract("left", ps.margin.left)
-        AABB:contract("up", ps.margin.up)
-        AABB:contract("right", ps.margin.right)
-        AABB:contract("down", ps.margin.down)
-        AABB = AABB:cut(self.parent:getAvailAABB())
-        return AABB
-    end
-end
-
--- returns AABB as it would be on screen according to shifted origins and margins
 function UI:getAABB()
-    local o = self:getOrigin()
-    return UI.AABB(o, {x = o.x + self.style.size.x, y = o.y + self.style.size.y})
+    return AABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
 end
 
--- returns real bounding box of element acording to available AABB and requested AABB
-function UI:getRealAABB()
-    return self:getAABB():cut(self:getAvailAABB())
+function UI:X()
+    return self.origin.x
+end
+function UI:Y()
+    return self.origin.y
+end
+function UI:width()
+    return self.size.x
+end
+function UI:height()
+    return self.size.y
 end
 
-
-
--- Assumption with cursor is that it points to objects requested area
----- because object may draw anything it wants inside area it would have
-
--- sets cursor relative to items AABB corner
-function UI:setCursor(x, y)
-    UI.Typeassert({x, y}, {'ANY', {'number', 'number'}, {{x='number',y='number'}}})
-    if type(x) == 'table' then x, y = x.x, x.y end
-    local AABB = self:getAABB()
-    self.toplevel.cursor.x, self.toplevel.cursor.y = AABB[1].x + x, AABB[1].y + y
+-- returns mouse relative to UI
+function UI:getRelativeMouse()
+    local mx, my = love.mouse.getX(), love.mouse.getY()
+    mx = min(max(self.origin.x, mx), self.origin.x + self.width) - self.origin.x
+    my = min(max(self.origin.y, my), self.origin.y + self.height) - self.origin.y
+    return mx, my
 end
 
--- returns cursor relative to AABB - would be inverse transformation as setCursor -> {x, y} === getCursor(setCursor(x, y))
-function UI:getCursor()
-    local AABB = self:getAABB()
-    return {x = self.toplevel.cursor.x - AABB[1].x, y = self.toplevel.cursor.y - AABB[1].y}
+function UI:reload()
+    self.cursor.x, self.cursor.y = self.origin.x, self.origin.y
+    self:resize(self.origin.x, self.origin.y, self.size.x, self.size.y) -- resize with the same values triggers widget update
+    self.widget:reload()
 end
 
--- sets cursor to absolute values on window - can be used to set to aval AABB
-function UI:setRawCursor(x, y)
-    UI.Typeassert({x, y}, {'ANY', {'number', 'number'}, {{x='number',y='number'}}})
-    if type(x) == 'table' then x, y = x.x, x.y end
-    self.toplevel.cursor.x, self.toplevel.cursor.y = x, y
+function UI:resize(x, y, width, height)
+    if type(x) ~= "number" or type(y) ~= "number" or type(width) ~= "number" or type(height) ~= "number" then
+        error("UI: invalid values to 'resize()'")
+    end
+    self.origin.x, self.origin.y = x, y
+    self.size.x, self.size.y = max(0, width), max(0, height)
+    self.widget._availAABB:set(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
+    local _ = (self.widget and self.widget:reloadLayout(true))
 end
 
--- return cursor relative to window (0,0), default pointing to corner of available draw area
+function UI.getPercent(val)
+    return type(val) == "string" and string.match(val, "^(%-?[0-9]+)%%$")
+end
+
 function UI:getRawCursor()
-    return {x = self.toplevel.cursor.x, y = self.toplevel.cursor.y}
+    return {x = self.cursor.x, y = self.cursor.y}
 end
 
+function UI:setRawCursor(x, y)
+    if type(x) == "table" then
+        x, y = x.x, x.y
+    end
+    self.cursor.x, self.cursor.y = x, y
+end
+
+-- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
+function UI:getWidgetAt(x, y)
+    return self.widget and self.widget:getWidgetAt(x, y)
+end
+
+-- returns widget by ID with UIWidget tree traversal
+function UI:getWidget(ID)
+    return self.widget and UI.widget:getWidgetByID(ID)
+end
 -------------------------------------------------------------------------------------
 return setmetatable(
     UI,
     {
         __call = function(_, ...)
-            return UI.new(...)
+            local ok, ret = pcall(UI.new, ...)
+            if ok then
+                return ret
+            else
+                error("UI: " .. ret)
+            end
         end
     }
 )
