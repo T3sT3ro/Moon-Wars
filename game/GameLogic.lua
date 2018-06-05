@@ -32,9 +32,9 @@ end
 local function createInitNeutralActors(neutralId)
     local initActors = {}
 
-    addInitActor(initActors, 1, "Item", neutralId, "magicRing")
-    addInitActor(initActors, 1, "Item", neutralId, "bow")
-    addInitActor(initActors, 1, "Item", neutralId, "sword")
+    --addInitActor(initActors, 1, "Item", neutralId, "magicRing")
+    --addInitActor(initActors, 1, "Item", neutralId, "bow")
+    --addInitActor(initActors, 1, "Item", neutralId, "sword")
 
     return initActors
 end
@@ -50,19 +50,19 @@ local function createInitActors(playerId)
 
     addInitActor(initActors, 1, "Nexus", playerId, "nexus_red")
     addInitActor(initActors, 4, "Unit", playerId, "unit")
-    addInitActor(initActors, 3, "Resource", playerId, "tree")
-    addInitActor(initActors, 2, "Resource", playerId, "rock")
-    addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
+    --addInitActor(initActors, 3, "Resource", playerId, "tree")
+    --addInitActor(initActors, 2, "Resource", playerId, "rock")
+    --addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
 
     return initActors
 end
 
 function GameLogic.init()
     local initActors = { createInitNeutralActors(0), createInitActors(1), createInitActors(2) }
-    map.addInitActor(initActors)
+    map.addInitActors(initActors)
 
     local addedUnits = {0, 0}
-    for _, unit in ipairs(_actors["Units"]) do
+    for _, unit in ipairs(_actors["Unit"]) do
         local added = addedUnits[unit.playerId]
         local orderNum = unit.playerId + 2 * added
         _unitsInOrder[orderNum] = unit
