@@ -89,7 +89,7 @@ function UIWidget.new(style, flags)
                 allowOverflow = "nil|boolean",
                 hidden = "nil|boolean",
                 invisible = "nil|boolean",
-                draggable = "nil|boolean",
+                draggable = "nil|boolean"
             }
         }
     )
@@ -102,7 +102,7 @@ function UIWidget.new(style, flags)
     style.size = style.size or {x = "100%", y = "100%"}
     style.margin = style.margin or {left = 0, right = 0, up = 0, down = 0}
     style.theme = style.theme or {bg, fg, fg_focus, hilit, hilit_focus}
-    
+
     --- DEFAULT FLAGS
     flags = flags or {}
     flags.keepFocus = flags.keepFocus or false -- TODO: will keep focus until dropFocus() is not
@@ -262,6 +262,12 @@ function UIWidget.new(style, flags)
     self.style.theme.hilit_focus = style.theme.hilit_focus
     self.style.theme.hilit = style.theme.hilit
 
+    self.flags.keepFocus        = flags.keepFocus
+    self.flags.clickThru        = flags.clickThru
+    self.flags.allowOverflow    = flags.allowOverflow
+    self.flags.hidden           = flags.hidden
+    self.flags.invisible        = flags.invisible
+    self.flags.draggable        = flags.draggable
     return self
 end
 
@@ -279,12 +285,13 @@ end
 ----- scissor is set to available space
 function UIWidget:draw(...)
     if not self.flags.hidden then
-        if not self.invisible then
+        if not self.flags.invisible then
             self:renderer(...)
         end
         for _, v in ipairs(self._childrenByZ) do
-            -- TODO: allow overflow flag implementation as set scissors to parent 
+            -- TODO: allow overflow flag implementation as set scissors to parent
             self:setScissor()
+            print(self:getRealAABB():normalized())
             v:draw(...)
         end
     end
@@ -436,7 +443,7 @@ function UIWidget:isFocused()
 end
 
 function UIWidget:dropFocus()
-    self.flags._focused = false
+    self._focused = false
 end
 
 -- true if mouse is over real AABB of self, excluding right and down border
@@ -446,7 +453,7 @@ function UIWidget:mouseIn()
     return mouse.x >= rAABB.x and mouse.y >= rAABB.y and mouse.x < rAABB.x and mouse.y < rAABB.y
 end
 
--- true if this item is hovered (and none of direct subitems with passThru=false is hovered) 
+-- true if this item is hovered (and none of direct subitems with passThru=false is hovered)
 function UIWidget:isHovered()
     return self._hovered and not self.flag.passThru -- TODO: pull up passThru ???
 end
