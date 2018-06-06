@@ -32,7 +32,7 @@ function Actor:init(playerId, config)
 end
 
 function Actor:draw()
-    love.graphics.draw(self.asset, self.x, self.y)
+    love.graphics.draw(self.asset, self.x*32, self.y*32,0,0.5,0.5)
 end
 
 function Actor:setPos(x, y)

@@ -1,20 +1,12 @@
 local RM = require "ResourceManager"
+local AI = require "game/MapAI"
 
 local GameMap = {}
 
 local map = {}
 
-<<<<<<< HEAD
-local function GenMap()
-    math.randomseed(os.time())
-    local function rand(l,u) return math.random(l,u) end
-    local nex = {["x"] = rand(2,8),["y"] = rand(3,18)}
+local nex = {}
 
-
-end
-
-=======
->>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
 local mapType = {"grass","stone","water"}
 --[[
     map types:
@@ -22,6 +14,32 @@ local mapType = {"grass","stone","water"}
     2 - rock
     3 - water
 --]]
+
+local function check()
+    local tree,rock,crystal,pass,err = false,false,false,false,true
+    if map[nex.x][nex.y].type ~= 1 or map[nex.x+1][nex.y].type ~= 1 or map[nex.x-1][nex.y].type ~= 1 or map[nex.x][nex.y+1].type ~= 1 or map[nex.x][nex.y-1].type ~= 1 then
+        return false
+    end
+    local vis ={}
+    for i=1,20 do
+        vis[i] = {}
+        for j=1,20 do
+            vis[i][j] = false
+        end
+    end
+    local function dfs(x,y)
+        if vis[x][y] then return end
+        if x == 10 then pass = true end
+        if #map[x][y].actors > 1 then err = false end
+        if map[x][y].actors[1] ~= nil then 
+            
+        end
+    end
+
+    if tree and rock and crystal and pass then return true end
+    return false
+end
+
 function GameMap.init()
     for i=1,20 do
         map[i] = {}
@@ -33,25 +51,20 @@ function GameMap.init()
                 if i + 1 == j and j % 2 == 0 then map[i][j].type = 2 end
                 if ((i + j) % 5 == 0 and i % 4 == 0) or ((i + j) % 5 == 1 and i % 4 == 0) or ((i + j) % 5 == 0 and i % 4 == 3) or ((i + j) % 5 == 4 and i % 4 == 3)then map[i][j].type = 3 end
             --]]
-<<<<<<< HEAD
-
-=======
->>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
         end
     end
     ---[[
-        local nexus ={}
-<<<<<<< HEAD
-
-=======
->>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
+        nex.x,nex.y = 6,5
+        --[[local nexus ={}
         nexus.type = "nexus_red"
         nexus.id = 1
-        nexus.x = 5
+        nexus.x = 6
         nexus.y = 5
         GameMap.addActor(nexus)
     --]]
-<<<<<<< HEAD
+    if check() == false then 
+        --error("Wrong map generated")
+    end
 end
 
 local function addActTable(tab)
@@ -60,15 +73,41 @@ local function addActTable(tab)
     end
 end
 
+local function setAct(player,tab)
+    local x,y = nex.x,nex.y
+    local units = 0
+    if player == 2 then
+        x,y = 21 - x,21 - y
+    end
+    for _,actor in ipairs(tab) do
+        if actor.type == "Nexus" then 
+            actor.x,actor.y = x,y
+        end
+        if actor.type == "Unit" then 
+            if units == 0 then
+                actor.x,actor.y = x+1,y
+            elseif units == 1 then
+                actor.x,actor.y = x-1,y
+            elseif units == 2 then
+                actor.x,actor.y = x,y+1
+            elseif units == 3 then
+                actor.x,actor.y = x,y-1
+            end
+            units = units + 1
+        end
+
+    end
+end
+
 function GameMap.addInitActors(initActors)
     local neutralActors = initActors[1]
     local player1Actors = initActors[2] -- contains Nexus and Units
     local player2Actors = initActors[3]
+    setAct(1,player1Actors)
+    setAct(2,player2Actors)
     addActTable(neutralActors)
     addActTable(player1Actors)
     addActTable(player2Actors)
-=======
->>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
 end
 
 function GameMap.clear()
@@ -82,9 +121,9 @@ end
 function GameMap.draw()
     for i=1,20 do
         for j=1,20 do
-            love.graphics.draw(RM.get(mapType[map[i][j].type]), j*64, i*64)
+            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32, j*32,0,0.5,0.5)
             for _,v in pairs(map[i][j].actors) do
-                love.graphics.draw(RM.get(v.type), j*64, i*64)
+                v:draw()
             end
         end
     end
