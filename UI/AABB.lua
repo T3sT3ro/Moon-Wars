@@ -28,7 +28,10 @@ function AABB.new(x1, y1, x2, y2)
 end
 
 function AABB:expand(l, r, u, d)
-    Typeassert({l, r, u, d}, {"ANY", {"number", "number", "number", "number"}, {"string", "number"}})
+    Typeassert(
+        {l, r, u, d},
+        {"ANY", {"number", "number", "number", "number"}, {"string", "number"}, {"number", "nil", "nil", "nil"}}
+    )
     if type(l) == "string" then
         if l == "left" then
             l, r, u, d = r, 0, 0, 0
@@ -40,17 +43,27 @@ function AABB:expand(l, r, u, d)
             l, r, u, d = 0, 0, 0, r
         end
     end
+    if r == nil then -- single value
+        l, r, u, d = l, l, l, l
+    end
     self[1] = {x = min(self[1].x - l, self[2].x), y = min(self[1].y - u, self[2].y)}
     self[2] = {x = max(self[2].x + r, self[1].x), y = max(self[2].y + d, self[1].y)}
+    return self
 end
 
 -- alias to expand with negative values
 function AABB:contract(l, r, u, d)
-    Typeassert({l, r, u, d}, {"ANY", {"number", "number", "number", "number"}, {"string", "number"}})
-    if type(l) == "string" then
+    Typeassert(
+        {l, r, u, d},
+        {"ANY", {"number", "number", "number", "number"}, {"string", "number"}, {"number", "nil", "nil", "nil"}}
+    )
+    if type(l) == "string" then -- side
         return self:expand(l, -r)
     end
-    return self:expand(-l, -r, -u, -d)
+    if r == nil then -- single value
+        return self:expand(-l)
+    end
+    return self:expand(-l, -r, -u, -d) -- full parametrization
 end
 
 -- intersection of two boxes TODO: cut and intersect, where one operates on original and the other one gives copy

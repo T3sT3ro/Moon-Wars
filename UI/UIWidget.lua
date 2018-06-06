@@ -225,7 +225,7 @@ function UIWidget.new(style, flags)
         {},
         {
             __index = function(t, k) -- returns value from _
-                local code = ({base = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5})[k]
+                local code = ({bg = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5})[k]
                 return (code and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
             end
         }
@@ -262,12 +262,12 @@ function UIWidget.new(style, flags)
     self.style.theme.hilit_focus = style.theme.hilit_focus
     self.style.theme.hilit = style.theme.hilit
 
-    self.flags.keepFocus        = flags.keepFocus
-    self.flags.clickThru        = flags.clickThru
-    self.flags.allowOverflow    = flags.allowOverflow
-    self.flags.hidden           = flags.hidden
-    self.flags.invisible        = flags.invisible
-    self.flags.draggable        = flags.draggable
+    self.flags.keepFocus = flags.keepFocus
+    self.flags.clickThru = flags.clickThru
+    self.flags.allowOverflow = flags.allowOverflow
+    self.flags.hidden = flags.hidden
+    self.flags.invisible = flags.invisible
+    self.flags.draggable = flags.draggable
     return self
 end
 
@@ -290,8 +290,7 @@ function UIWidget:draw(...)
         end
         for _, v in ipairs(self._childrenByZ) do
             -- TODO: allow overflow flag implementation as set scissors to parent
-            self:setScissor()
-            print(self:getRealAABB():normalized())
+            love.graphics.setScissor(v._availAABB:normalized())
             v:draw(...)
         end
     end
@@ -431,11 +430,6 @@ function UIWidget:setCursor(x, y)
         x, y = x.x, x.y
     end
     self._UI.cursor.x, self._UI.cursor.y = self._AABB[1].x + x, self._AABB[1].y + y
-end
-
---  overridable to implement subelement scissor policy
-function UIWidget:setScissor(...)
-    love.graphics.setScissor(self:getRealAABB():normalized())
 end
 
 function UIWidget:isFocused()

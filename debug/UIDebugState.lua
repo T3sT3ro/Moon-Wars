@@ -31,12 +31,13 @@ local widgetRenderer = function(self)
     ---[[
     love.graphics.setColor(white:normalized())
     love.graphics.print(self._ID, self._AABB[1].x, self._AABB[1].y)
-    love.graphics.setColor(red:normalized())
-    love.graphics.rectangle("line", self:getAABB():normalized())
     ---[[
-    love.graphics.setColor(greenish:normalized())
+    love.graphics.setColor(self.style.theme.bg:normalized())
     love.graphics.rectangle("fill", self:getRealAABB():normalized())
     --]]
+    love.graphics.setColor(red:normalized())
+    love.graphics.rectangle("line", self:getRealAABB():normalized())
+
     love.graphics.setColor(original[1], original[2], original[3], original[4])
 end
 
