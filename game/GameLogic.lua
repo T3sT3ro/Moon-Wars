@@ -8,9 +8,14 @@ local GameLogic = {}
 
 local _curUnitIdx = 0
 local _curUnit = nil
-local _curActionPoints = 0
+local _startActionPoints = 10
+local _curActionPoints = _startActionPoints
 local _actors = {}
 local _unitsInOrder = {}
+
+function GameLogic.getCurUnit()
+    return _curUnit
+end
 
 local function createActor(typeName, playerId, nameAsset)
     local actor = Factory.create(typeName, playerId, nameAsset)
@@ -79,8 +84,9 @@ end
 
 function GameLogic.doAction(actionName, ...)
     local action = helper.actions[actionName]
+    print("action: " .. tostring(action))
     if  action == nil or 
-        helper.checkArgs(action.argsTypes, ...) or 
+        not helper.checkArgs(action.argsTypes, ...) or 
         action.neededPoints > _curActionPoints then
             return false
     end
@@ -94,25 +100,30 @@ local function endRound()
 end
 
 local function endTurn()
+    print("turn ended")
+
     _curUnitIdx = _curUnitIdx + 1
     if _curUnitIdx > #_unitsInOrder then
         _curUnitIdx = 1
         endRound()
     end
     _curUnit = _unitsInOrder[_curUnitIdx]
+    _curActionPoints = _startActionPoints
 end
 helper.addAction("endTurn", endTurn, {}, 0)
 
 local function move(x, y)
-    if map.isMovable(x, y) and map.distance(_curUnit.x, _curUnit.y, x, y) == 1 then
+    print("x: " .. tostring(x) .. ", y: " .. tostring(y))
+    print("isMoveable: " .. tostring(map.isMoveable(x, y)))
+    if map.isMoveable(x, y) and map.distance(_curUnit.x, _curUnit.y, x, y) == 1 then
         map.removeActor(_curUnit)
-        _curUnit.setPos(x, y)
+        _curUnit:setPos(x, y)
         map.addActor(_curUnit)
         return true
     end
     return false
 end
-helper.addAction("move", move, {"number", "number"}, 1)
+helper.addAction("move", move, {"number", "number"}, 0)
 
 local function attack(x, y)
     if map.distance(_curUnit.x, _curUnit.y, x, y) <= _curUnit.range then
