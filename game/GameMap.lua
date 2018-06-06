@@ -1,11 +1,13 @@
 local RM = require "ResourceManager"
 local AI = require "game/MapAI"
-
+local abs = math.abs
 local GameMap = {}
 
 local map = {}
 
 local nex = {}
+
+local res = {}
 
 local mapType = {"grass","stone","water"}
 --[[
@@ -16,7 +18,7 @@ local mapType = {"grass","stone","water"}
 --]]
 
 local function check()
-    local tree,rock,crystal,pass,err = false,false,false,false,true
+    local tree,rock,mine,pass,err = 0,0,0,false,true
     if map[nex.x][nex.y].type ~= 1 or map[nex.x+1][nex.y].type ~= 1 or map[nex.x-1][nex.y].type ~= 1 or map[nex.x][nex.y+1].type ~= 1 or map[nex.x][nex.y-1].type ~= 1 then
         return false
     end
@@ -29,14 +31,26 @@ local function check()
     end
     local function dfs(x,y)
         if vis[x][y] then return end
+        vis[x][y] = true
         if x == 10 then pass = true end
         if #map[x][y].actors > 1 then err = false end
-        if map[x][y].actors[1] ~= nil then 
-            
+        if map[x][y].actors[1] ~= nil and map[x][y].actors[1].type == "Resource" then 
+            if map[x][y].actors[1].resType == "tree" then
+                tree = tree + 1
+            elseif map[x][y].actors[1].resType == "rock" then
+                rock = rock + 1
+            elseif map[x][y].actors[1].resType == "mine" then
+                mine = mine + 1
+            end
+            return
         end
+        if x < 10 and map[x+1][y].type == 1 then dfs(x+1,y) end
+        if x > 1 and map[x-1][y].type == 1 then dfs(x-1,y) end
+        if y < 20 and map[x][y+1].type == 1 then dfs(x,y+1) end
+        if y > 1 and map[x][y-1].type == 1 then dfs(x,y-1) end
     end
-
-    if tree and rock and crystal and pass then return true end
+    dfs(nex.x,nex.y)
+    if --[[tree == 3 and rock == 2 and crystal == 1 and]] pass then return true end
     return false
 end
 
@@ -48,22 +62,21 @@ function GameMap.init()
             map[i][j].actors = {}
             ---[[
                 map[i][j].type = 1
-                if i + 1 == j and j % 2 == 0 then map[i][j].type = 2 end
-                if ((i + j) % 5 == 0 and i % 4 == 0) or ((i + j) % 5 == 1 and i % 4 == 0) or ((i + j) % 5 == 0 and i % 4 == 3) or ((i + j) % 5 == 4 and i % 4 == 3)then map[i][j].type = 3 end
+                if i + 1 == j and j % 2 == 0 and i <= 10 then map[i][j].type = 2 end
+                if ((i + j) % 5 == 0 and i % 4 == 0) or ((i + j) % 5 == 1 and i % 4 == 0) or ((i + j) % 5 == 0 and i % 4 == 3) or ((i + j) % 5 == 4 and i % 4 == 3) and i <= 10 then map[i][j].type = 3 end
             --]]
         end
     end
+    for i=1,20 do
+        for j=1,20 do
+            if i > 10 then map[i][j].type = map[21-i][21-j].type end
+        end
+    end
+
     ---[[
-        nex.x,nex.y = 6,5
-        --[[local nexus ={}
-        nexus.type = "nexus_red"
-        nexus.id = 1
-        nexus.x = 6
-        nexus.y = 5
-        GameMap.addActor(nexus)
-    --]]
+        nex.x,nex.y = 6,5--]]
     if check() == false then 
-        --error("Wrong map generated")
+        error("Wrong map generated")
     end
 end
 
@@ -130,13 +143,14 @@ function GameMap.draw()
 end
 
 function GameMap.distance(x1, y1, x2, y2)
-    return abs(x1-x2)+(y1-y2)
+    return abs((x1-x2)+(y1-y2))
 end
 
 function GameMap.isMoveable(x, y)
-    if ma[x][y].type ~= 1 then return false end
-    for i,_ in pairs(map[x][y].actors) do
-        if i.type ~= "item" then return false end
+    if map[x] == nil or map[x][y] == nil then return false end
+    if map[x][y].type ~= 1 then return false end
+    for _,v in pairs(map[x][y].actors) do
+        if v.type ~= "item" then return false end
     end
     return true
 end
