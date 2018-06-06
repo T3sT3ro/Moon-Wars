@@ -4,8 +4,8 @@ local Unit = require "game/actors/Unit"
 local GameManager = {}
 
 function GameManager.init()
-    logic.init()
     map.init()
+    logic.init()
 end
 
 function GameManager.clear()

@@ -12,7 +12,7 @@ local function nextIdGenerator()
 end
 local nextId = nextIdGenerator()
 
-local Actor = {x = 0, y = 0}
+local Actor = {x = 1, y = 1}
 function Actor:new(o)
     o = o or {} 
     self.__index = self

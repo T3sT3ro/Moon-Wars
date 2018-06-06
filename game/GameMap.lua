@@ -4,6 +4,13 @@ local GameMap = {}
 
 local map = {}
 
+local function GenMap()
+    math.randomseed(os.time())
+    local function rand(l,u) return math.random(l,u) end
+    local nex = {["x"] = rand(2,8),["y"] = rand(3,18)}
+
+
+end
 
 local mapType = {"grass","stone","water"}
 --[[
@@ -37,11 +44,19 @@ function GameMap.init()
     --]]
 end
 
+local function addActTable(tab)
+    for _,actor in ipairs(tab) do
+        map[actor.x][actor.y].actors[actor.id] = actor
+    end
+end
+
 function GameMap.addInitActors(initActors)
     local neutralActors = initActors[1]
     local player1Actors = initActors[2] -- contains Nexus and Units
     local player2Actors = initActors[3]
-
+    addActTable(neutralActors)
+    addActTable(player1Actors)
+    addActTable(player2Actors)
 end
 
 function GameMap.clear()
