@@ -1,5 +1,6 @@
 local RM = require "ResourceManager"
 local AI = require "game/MapAI"
+local abs = math.abs
 
 local GameMap = {}
 
@@ -130,13 +131,14 @@ function GameMap.draw()
 end
 
 function GameMap.distance(x1, y1, x2, y2)
-    return abs(x1-x2)+(y1-y2)
+    return abs((x1-x2)+(y1-y2))
 end
 
 function GameMap.isMoveable(x, y)
-    if ma[x][y].type ~= 1 then return false end
-    for i,_ in pairs(map[x][y].actors) do
-        if i.type ~= "item" then return false end
+    if map[x] == nil or map[x][y] == nil then return false end
+    if map[x][y].type ~= 1 then return false end
+    for _,v in pairs(map[x][y].actors) do
+        if v.type ~= "item" then return false end
     end
     return true
 end
