@@ -4,6 +4,7 @@ local GameMap = {}
 
 local map = {}
 
+<<<<<<< HEAD
 local function GenMap()
     math.randomseed(os.time())
     local function rand(l,u) return math.random(l,u) end
@@ -12,6 +13,8 @@ local function GenMap()
 
 end
 
+=======
+>>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
 local mapType = {"grass","stone","water"}
 --[[
     map types:
@@ -30,18 +33,25 @@ function GameMap.init()
                 if i + 1 == j and j % 2 == 0 then map[i][j].type = 2 end
                 if ((i + j) % 5 == 0 and i % 4 == 0) or ((i + j) % 5 == 1 and i % 4 == 0) or ((i + j) % 5 == 0 and i % 4 == 3) or ((i + j) % 5 == 4 and i % 4 == 3)then map[i][j].type = 3 end
             --]]
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
         end
     end
     ---[[
         local nexus ={}
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
         nexus.type = "nexus_red"
         nexus.id = 1
         nexus.x = 5
         nexus.y = 5
         GameMap.addActor(nexus)
     --]]
+<<<<<<< HEAD
 end
 
 local function addActTable(tab)
@@ -57,6 +67,8 @@ function GameMap.addInitActors(initActors)
     addActTable(neutralActors)
     addActTable(player1Actors)
     addActTable(player2Actors)
+=======
+>>>>>>> 3120cd76b52def440e6313f53a81b13d2dc54783
 end
 
 function GameMap.clear()
