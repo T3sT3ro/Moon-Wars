@@ -8,6 +8,8 @@ local map = {}
 local nex = {}
 
 local res = {}
+res[1] = {}
+res[2] = {}
 
 local mapType = {"grass","stone","water"}
 --[[
@@ -50,7 +52,7 @@ local function check()
         if y > 1 and map[x][y-1].type == 1 then dfs(x,y-1) end
     end
     dfs(nex.x,nex.y)
-    if --[[tree == 3 and rock == 2 and crystal == 1 and]] pass then return true end
+    if --[[tree == 3 and --[[rock == 2 and crystal == 1 and]] pass then return true end
     return false
 end
 
@@ -74,7 +76,20 @@ function GameMap.init()
     end
 
     ---[[
-        nex.x,nex.y = 6,5--]]
+        nex.x,nex.y = 6,5
+        res[1].tree = {{x = 1, y = 1},{x = 2 , y = 15},{x = 9, y = 11}}
+        res[1].rock = {{x = 6, y = 8},{x = 3 ,y = 14}}
+        res[2].tree = {}
+        res[2].rock = {}
+        for i=1, 3 do
+            res[2].tree[i] = {}
+            res[2].tree[i].x,res[2].tree[i].y = 21 -res[1].tree[i].x,21 - res[1].tree[i].y
+        end
+        for i=1, 2 do
+            res[2].rock[i] = {}
+            res[2].rock[i].x,res[2].rock[i].y = 21 -res[1].rock[i].x,21 - res[1].rock[i].y
+        end
+        --]]
     if check() == false then 
         error("Wrong map generated")
     end
@@ -88,15 +103,14 @@ end
 
 local function setAct(player,tab)
     local x,y = nex.x,nex.y
-    local units = 0
+    local units,trees,rocks = 0,1,1
     if player == 2 then
         x,y = 21 - x,21 - y
     end
     for _,actor in ipairs(tab) do
         if actor.type == "Nexus" then 
             actor.x,actor.y = x,y
-        end
-        if actor.type == "Unit" then 
+        elseif actor.type == "Unit" then 
             if units == 0 then
                 actor.x,actor.y = x+1,y
             elseif units == 1 then
@@ -107,8 +121,15 @@ local function setAct(player,tab)
                 actor.x,actor.y = x,y-1
             end
             units = units + 1
+        elseif actor.type == "Resource" then
+            if actor.resType == "tree" then
+                actor.x,actor.y = res[player].tree[trees].x,res[player].tree[trees].y
+                trees = trees + 1
+            elseif actor.resType == "rock" then
+                actor.x,actor.y = res[player].rock[rocks].x,res[player].rock[rocks].y
+                rocks = rocks + 1
+            end
         end
-
     end
 end
 
