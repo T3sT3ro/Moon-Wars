@@ -460,6 +460,12 @@ function UIWidget:requestFocus()
     return self._UI:requestFocus(self)
 end
 
+-- called by other elements to drop the focus - true if focus drop was a success, false otherwise
+function UIWidget:requestDropFocus()
+    self:dropFocus()
+    return true
+end
+
 -- true if mouse is over real AABB of self, excluding right and down border
 function UIWidget:mouseIn()
     local mx, my = love.mouse.getPosition()
@@ -482,7 +488,7 @@ function UIWidget:getWidgetAt(x, y, solid)
             ans = nil
         end
         for i = #self._childrenByZ, 1, -1 do
-            ans = self._childrenByZ[i]:getWidgetAt(x, y) or ans
+            ans = self._childrenByZ[i]:getWidgetAt(x, y, solid) or ans
         end
     end
     return ans
@@ -524,34 +530,43 @@ end
 
 -- whenever mouse was clicked on given object
 function UIWidget:mouseClicked(x, y, button)
+    print("EVT mp:", self._ID, x, y, button)
+    self:requestFocus()
 end
 
 -- whenever mouse was released on given object
 function UIWidget:mouseReleased(x, y, button)
+    print("EVT mr:", self._ID, x, y, button)
 end
 
 -- whenever mouse wheel has been moved: x positive is horizontal right, y positive is vertical up
-function UIWidget:mouseWheelMoved(x, y)
+function UIWidget:wheelMoved(x, y)
+    print("EVT wm:", self._ID, x, y)
 end
 
 -- whenever given keyboard key has been pressed with isRepeat if it was held
 function UIWidget:keyPressed(key,scancode,isRepeat)
+    print("EVT kp:", self._ID, key,scancode,isRepeat)
 end
 
 -- whenever keyboard key was released
 function UIWidget:keyReleased(key,scancode)
+    print("EVT kr:", self._ID, key, scancode)
 end
 
 -- whenever text has been entered by user -> shift+2  produces '@' as text
 function UIWidget:textInput(text)
+    print("EVT ti:", self._ID, text)
 end
 
 -- whenever file is dropped on this element and passThru=false
 function UIWidget:fileDropped(file)
+    print("EVT fd:", self._ID, file)
 end
 
 -- whenever directory is dropped on this element and passThru=false; path is the full platform-dependent path to directory
 function UIWidget:directoryDropped(path)
+    print("EVT dd:", self._ID, path)
 end
 
 --------------------------

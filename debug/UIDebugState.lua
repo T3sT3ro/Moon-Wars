@@ -10,12 +10,12 @@ local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
 local margin = 30
 local GUI = UI(margin, margin, w_width - 2 * margin, w_height - 2 * margin)
 local f0 = UIWidget({origin = {x = "25%", y = "25%"}, size = {x = "50%", y = "50%"}, margin = {all = 30}})
-local f1 = UIWidget({size = {x = "120%", y = "120%"}, margin = {all = 30}})
-local f2 = UIWidget({size = {x = "50%", y = "100%"}, margin = {all = 30}})
-local f3 = UIWidget({origin={x='50%', y='0%'}, size = {x = "50%", y = "100%"}})
-local f4 = UIWidget({origin={x='25%', y='25%'}, size = {x = "50%", y = "50%"}}, {passThru = true, allowOverflow=true})
-local f5 = UIWidget({origin={x='80%', y='80%'}, size = {x = "100%", y = "100%"}})
-
+local f1 = UIWidget({size = {x = "100%", y = "100%"}, margin = {all = 30}})
+local f2 = UIWidget({size = {x = "50%", y = "100%"}, margin = {all = 30}}, {invisible=true})
+local f3 = UIWidget({origin = {x = "50%", y = "0%"}, size = {x = "50%", y = "100%"}})
+local f4 =
+    UIWidget({origin = {x = "25%", y = "25%"}, size = {x = "50%", y = "50%"}}, {passThru = true, allowOverflow = true})
+local f5 = UIWidget({origin = {x = "80%", y = "80%"}, size = {x = "100%", y = "100%"}})
 
 GUI:setWidget(f0)
 f0:addWidget(f1)
@@ -35,20 +35,19 @@ local font = nil
 local widgetRenderer = function(self)
     self:setCursor(0, 0)
     local original = {love.graphics.getColor()}
-    ---[[
-    love.graphics.setColor(white:normalized())
-    love.graphics.print(self._ID, self._AABB[1].x, self._AABB[1].y)
-    ---[[
-    if self:isHovered() then 
+    if self:isFocused() then
         love.graphics.setColor(self.style.theme.fg_focus:normalized())
+    elseif self:isHovered() then
+        love.graphics.setColor(self.style.theme.fg:normalized())
     else
-        love.graphics.setColor(self.style.theme.fg:normalized())        
+        love.graphics.setColor(self.style.theme.bg:normalized())
     end
     love.graphics.rectangle("fill", self:getRealAABB():normalized())
-    --]]
     love.graphics.setColor(red:normalized())
     love.graphics.rectangle("line", self:getAABB():normalized())
-
+    love.graphics.setColor(white:normalized())
+    love.graphics.print(self._ID, self._AABB[1].x, self._AABB[1].y)
+    
     love.graphics.setColor(original[1], original[2], original[3], original[4])
 end
 
@@ -59,10 +58,31 @@ f3.renderer = widgetRenderer
 f4.renderer = widgetRenderer
 f5.renderer = widgetRenderer
 
-local oldHandlers = {}
+local oldHandlers = {mc, mr, wm, kp, kr, ti, fd, dd}
 
 function UIDebugState.init()
-    ResourceManager.load('font.monospace24', 'Inconsolata-Regular', 'ttf', 'resources/fonts', 'font', 24)
+    oldHandlers = {
+        mp = love.mousepressed,
+        mr = love.mousereleased,
+        wm = love.wheelmoved,
+        kp = love.keypressed,
+        kr = love.keyreleased,
+        ti = love.textinput,
+        fd = love.filedropped,
+        dd = love.directorydropped
+    }
+    local handlers = GUI:getEventHandlers()
+
+    love.mousepressed = handlers.mousepressed
+    love.mousereleased = handlers.mousereleased
+    love.wheelmoved = handlers.wheelmoved
+    love.keypressed = handlers.keypressed
+    love.keyreleased = handlers.keyreleased
+    love.textinput = handlers.textinput
+    love.filedropped = handlers.filedropped
+    love.directorydropped = handlers.directorydropped
+
+    ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
     font = ResourceManager.get("font.monospace24")
     stateDesc = stateDesc or love.graphics.newText(font, "UI_DEBUG_STATE")
     click.start, click.stop = nil, nil
@@ -71,6 +91,14 @@ end
 
 function UIDebugState.clear()
     click.start, click.stop = nil, nil
+    love.mousepressed = oldHandlers.mp
+    love.mousereleased = oldHandlers.mr
+    love.wheelmoved = oldHandlers.wm
+    love.keypressed = oldHandlers.kp
+    love.keyreleased = oldHandlers.kr
+    love.textinput = oldHandlers.ti
+    love.filedropped = oldHandlers.fd
+    love.directorydropped = oldHandlers.dd
 end
 
 function UIDebugState.update(dt)
@@ -124,7 +152,7 @@ function UIDebugState.draw()
     love.graphics.setColor(red:normalized())
     love.graphics.draw(stateDesc, 0, 0)
     local mousePosText = love.graphics.newText(font, string.format("Mouse:\t(%d\t,%d)", love.mouse.getPosition()))
-    love.graphics.draw(mousePosText, w_width-mousePosText:getWidth(), w_height-mousePosText:getHeight())
+    love.graphics.draw(mousePosText, w_width - mousePosText:getWidth(), w_height - mousePosText:getHeight())
     love.graphics.rectangle("fill", w_width - margin, 0, margin, margin)
     love.graphics.rectangle("line", GUI.origin.x, GUI.origin.y, GUI.size.x, GUI.size.y)
     love.graphics.setColor(white:normalized())
@@ -137,7 +165,6 @@ function UIDebugState.draw()
         _ = love.keyboard.isDown("3") and drawAABB(f3:getAvailAABB(), blueish, " F3_A")
         _ = love.keyboard.isDown("4") and drawAABB(f4:getAvailAABB(), blueish, " F4_A")
         _ = love.keyboard.isDown("5") and drawAABB(f5:getAvailAABB(), blueish, " F5_A")
-        
     end
     if love.keyboard.isDown("i") then
         _ = love.keyboard.isDown("0") and drawAABB(f0:getAABB(), redish, " F0_I")
@@ -153,7 +180,7 @@ function UIDebugState.draw()
         _ = love.keyboard.isDown("2") and drawAABB(f2:getRealAABB(), greenish, " F2_R")
         _ = love.keyboard.isDown("3") and drawAABB(f3:getRealAABB(), greenish, " F3_R")
         _ = love.keyboard.isDown("4") and drawAABB(f4:getRealAABB(), greenish, " F4_R")
-        _ = love.keyboard.isDown("5") and drawAABB(f5:getRealAABB(), greenish, " F5_R")        
+        _ = love.keyboard.isDown("5") and drawAABB(f5:getRealAABB(), greenish, " F5_R")
     end
     if love.keyboard.isDown("c") then
         if love.keyboard.isDown("0") then

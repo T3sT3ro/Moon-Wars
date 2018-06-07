@@ -35,6 +35,16 @@ function love.graphics.newFont(...)
 end
 function love.graphics.newText(...)
     print("love.graphics.newText():", ...)
+    return {
+        getWidth = function(self)
+            print("text:getWidth()")
+            return 30
+        end,
+        getHeight = function(self)
+            print("text:getHeight()")
+            return 10
+        end
+    }
 end
 function love.graphics.setScissor(x, y, w, h)
     print("love.graphics.setScissor():", x, y, w, h)

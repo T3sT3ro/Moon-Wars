@@ -10,11 +10,11 @@ Color = require "UI/Color"
 UI.__index = UI
 
 UI.theme = {
-    Color("#63002d"),
-    Color("#8b003f"),
-    Color("#c1404d"),
-    Color("#ffa535"),
-    Color("#ffcd32"),
+    Color("#63002dbb"),
+    Color("#8b003fbb"),
+    Color("#c1404dbb"),
+    Color("#ffa535bb"),
+    Color("#ffcd32bb"),
     font = love.graphics.newFont(14)
 }
 
@@ -113,54 +113,64 @@ function UI:resize(x, y, width, height)
     local _ = (self._widget and self._widget:reloadLayout(true))
 end
 
---------------EVENTS--------------
+-- true if gained focus, false otherwise
 function UI:requestFocus(widget)
-    if self._focusedWidget == nil then
+    if self._focusedWidget == nil or self._focusedWidget == widget then
         self._focusedWidget = widget
         return true
-    elseif self._focusedWidget == widget then
-        return true
     else
-        return false -- FIXME: _focusedWidget:requestDropFocus() ???
+        if self._focusedWidget:requestDropFocus() then
+            self._focusedWidget = widget
+            return true
+        else
+            return false
+        end
     end
 end
+--------------EVENTS--------------
 
 local function mouseClickedEvt(ui, x, y, button)
-    local widget = ui:getWidgetAt(x, y)
+    local widget = ui:getWidgetAt(x, y, true)
     if widget then
         if widget ~= ui._focusedWidget then
-            ui._focusedWidget:dropFocus()
+            if ui._focusedWidget then
+                ui._focusedWidget:dropFocus()
+            end
         end
         widget:mouseClicked(x, y, button)
     elseif ui._focusedWidget then -- outside of any widget
         ui._focusedWidget:dropFocus()
     end
-    ui._clickBegin = widget
+    ui._clickBegin = {widget = widget, x = x, y = y}
 end
 
+-- if any widget is focused, then release is send back to focused, otherwise to visible element
 local function mouseReleasedEvt(ui, x, y, button)
     local targetWidget = ui:getWidgetAt(x, y, true) -- target is a solid widget
-    ui._clickEnd = targetWidget
+    ui._clickEnd = {widget = targetWidget, x = x, y = y}
     if ui._focusedWidget then
         ui._focusedWidget:mouseReleased(x, y, button)
+    elseif targetWidget then
         targetWidget:mouseReleased(x, y, button)
     end
     ui._clickEnd = nil
     ui._clickBegin = nil
 end
 
-local function mouseWheelMovedEvt(x, y)
-    if self._hoveredWidget then
-        self._hoveredWidget:mouseWheelMoved(x, y)
+local function wheelMovedEvt(ui, x, y)
+    if ui._hoveredWidget then
+        ui._hoveredWidget:wheelMoved(x, y)
     end
 end
 
+-- can override
 function UI:keyPressedEvt(key, scancode, isrepeat)
     if self._focusedWidget then
         self._focusedWidget:keyPressed(key, scancode, isrepeat)
     end
 end
 
+-- can override
 function UI:keyReleasedEvt(key, scancode)
     if self._focusedWidget then
         self._focusedWidget:keyReleased(key, scancode)
@@ -169,50 +179,60 @@ end
 
 local function textInputEvt(ui, text)
     if ui._focusedWidget then
-        self._focusedWidget:textInput(text)
+        ui._focusedWidget:textInput(text)
     end
 end
 
-local function fileDirDroppedEvt(file, isDir)
+-- prioritize the focused widget, otherwise hovered
+local function fileDirDroppedEvt(ui, file, isDir)
     local mx, my = love.mouse.getPosition()
     local targetWidget = ui:getWidgetAt(mx, my, true)
-    if targetWidget then
-        if isDir then
+    if isDir then
+        if ui._focusedWidget then
+            ui._focusedWidget:directoryDropped(file)
+        elseif targetWidget then
             targetWidget:directoryDropped(file)
-        else
+        end
+    else
+        if ui._focusedWidget then
+            ui._focusedWidget:fileDropped(file)
+        elseif targetWidget then
             targetWidget:fileDropped(file)
         end
     end
 end
----------------------------------
+------------------
 function UI:getEventHandlers()
     local events = {}
     ----
-    events.mouseClicked = function(x, y, button)
+    events.mousepressed = function(x, y, button)
         mouseClickedEvt(self, x, y, button)
     end
-    events.mouseReleased = function(x, y, button)
+    events.mousereleased = function(x, y, button)
         mouseReleasedEvt(self, x, y, button)
     end
-    events.keyPressed = function(key, scancode, isrepeat)
+    events.wheelmoved = function(x, y)
+        wheelMovedEvt(self, x, y)
+    end
+    events.keypressed = function(key, scancode, isrepeat)
         self:keyPressedEvt(key, scancode, isrepeat)
     end
-    events.keyReleased = function(key, scancode)
+    events.keyreleased = function(key, scancode)
         self:keyReleasedEvt(key, scancode)
     end
-    events.textInput = function(text)
+    events.textinput = function(text)
         textInputEvt(self, text)
     end
-    events.fileDropped = function(file) 
+    events.filedropped = function(file)
         fileDirDroppedEvt(self, file, false)
     end
-    events.directoryDropped = function(file) 
+    events.directorydropped = function(file)
         fileDirDroppedEvt(self, file, true)
     end
     ----
     return events
 end
-
+---------------------------------
 function UI:getAABB()
     return AABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
 end
@@ -253,8 +273,8 @@ function UI:setRawCursor(x, y)
 end
 
 -- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
-function UI:getWidgetAt(x, y)
-    return self._widget and self._widget:getWidgetAt(x, y)
+function UI:getWidgetAt(x, y, solid)
+    return self._widget and self._widget:getWidgetAt(x, y, solid)
 end
 
 -- returns widget by ID with UIWidget tree traversal
