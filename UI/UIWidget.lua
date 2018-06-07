@@ -271,8 +271,8 @@ end
 
 function UIWidget:update(...) -- TODO: status passed during tree traversal (anyHovered flag)
     if not self.flags.hidden then -- don't waste resources for hidden objects
-        self:updater(...)
         self:reloadLayout(self._layoutModified) -- handles size, origin, margin changes (later also drag and scroll?)
+        self:updater(...)
         for _, v in ipairs(self._childrenByZ) do
             v:update(...)
         end
@@ -317,8 +317,6 @@ end
 -- guarantee - availAABB is set properly
 function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was updated
     if not self.flags.hidden and doReload or self._layoutModified then -- resources save on hidden objects
-        -- FIXME: test
-
         -- assigning has sideeffect of recalculating exact sizes
         self.style.origin.x = self.style.origin:value("x")
         self.style.origin.y = self.style.origin:value("y")
@@ -328,6 +326,7 @@ function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was u
         self.style.margin.right = self.style.margin:value("right")
         self.style.margin.up = self.style.margin:value("up")
         self.style.margin.down = self.style.margin:value("down")
+        --FIXME: thorough testing
 
         -- self AABB
         local x1 = self._availAABB[1].x + self.style.origin.x
@@ -482,7 +481,7 @@ function UIWidget:getWidgetAt(x, y, solid)
     if self.flags.hidden then
         return nil
     end
-    local ans = self:getRealAABB():contains(x, y) and self
+    local ans = self.style.size.x > 0 and self.style.size.y > 0 and self:getRealAABB():contains(x, y) and self
     if self.flags.allowOverflow or ans then
         if solid and self.flags.passThru then -- solid mode and it's pass thru, then not this element
             ans = nil
@@ -530,43 +529,34 @@ end
 
 -- whenever mouse was clicked on given object
 function UIWidget:mouseClicked(x, y, button)
-    print("EVT mp:", self._ID, x, y, button)
-    self:requestFocus()
 end
 
 -- whenever mouse was released on given object
 function UIWidget:mouseReleased(x, y, button)
-    print("EVT mr:", self._ID, x, y, button)
 end
 
 -- whenever mouse wheel has been moved: x positive is horizontal right, y positive is vertical up
 function UIWidget:wheelMoved(x, y)
-    print("EVT wm:", self._ID, x, y)
 end
 
 -- whenever given keyboard key has been pressed with isRepeat if it was held
-function UIWidget:keyPressed(key,scancode,isRepeat)
-    print("EVT kp:", self._ID, key,scancode,isRepeat)
+function UIWidget:keyPressed(key, scancode, isRepeat)
 end
 
 -- whenever keyboard key was released
-function UIWidget:keyReleased(key,scancode)
-    print("EVT kr:", self._ID, key, scancode)
+function UIWidget:keyReleased(key, scancode)
 end
 
 -- whenever text has been entered by user -> shift+2  produces '@' as text
 function UIWidget:textInput(text)
-    print("EVT ti:", self._ID, text)
 end
 
 -- whenever file is dropped on this element and passThru=false
 function UIWidget:fileDropped(file)
-    print("EVT fd:", self._ID, file)
 end
 
 -- whenever directory is dropped on this element and passThru=false; path is the full platform-dependent path to directory
 function UIWidget:directoryDropped(path)
-    print("EVT dd:", self._ID, path)
 end
 
 --------------------------

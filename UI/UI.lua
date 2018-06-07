@@ -65,6 +65,7 @@ function UI:setWidget(widget)
 end
 
 function UI:update(dt, ...)
+    self._widget:update(dt, ...)
     local hovered = self._widget:getHovered()
     if hovered ~= self._hoveredWidget then -- won't trigger while same widget is hovered or no widget is hovered
         if self._hoveredWidget and not self._hoveredWidget.flags.passThru then
@@ -75,7 +76,6 @@ function UI:update(dt, ...)
         end
     end
     self._hoveredWidget = hovered
-    self._widget:update(dt, ...)
 end
 
 function UI:draw(...)
