@@ -34,7 +34,7 @@ end
 ---- theme = {bg, fg, fg_focus, hilit, hilit_focus}
 -- flags:
 ---- keepFocus
----- clickThru
+---- passThru
 ---- allowOverflow
 ---- hidden
 ---- invisible
@@ -85,7 +85,7 @@ function UIWidget.new(style, flags)
             "nil",
             {
                 keepFocus = "nil|boolean",
-                clickThru = "nil|boolean",
+                passThru = "nil|boolean",
                 allowOverflow = "nil|boolean",
                 hidden = "nil|boolean",
                 invisible = "nil|boolean",
@@ -106,7 +106,7 @@ function UIWidget.new(style, flags)
     --- DEFAULT FLAGS
     flags = flags or {}
     flags.keepFocus = flags.keepFocus or false -- TODO: will keep focus until dropFocus() is not
-    flags.clickThru = flags.clickThru or false -- TODO: true for element to not register click
+    flags.passThru = flags.passThru or false -- TODO: true for element to not register click
     flags.allowOverflow = flags.allowOverflow or false -- TODO: allowOverflow by IDs
     flags.hidden = flags.hidden or false -- FIXME: test
     flags.invisible = flags.invisible or false -- doesn't render self but renders children
@@ -130,7 +130,7 @@ function UIWidget.new(style, flags)
             end,
             __newindex = function(t, k, val)
                 local t = getmetatable(t)
-                local valP = UI.getPercent(val)
+                local valP = UIWidget.getPercent(val)
 
                 if k == "x" then
                     self._layoutModified = (valP ~= t._xP) or (val ~= t._x)
@@ -184,7 +184,7 @@ function UIWidget.new(style, flags)
             end,
             __newindex = function(T, k, val)
                 local t = getmetatable(T)
-                local valP = UI.getPercent(val)
+                local valP = UIWidget.getPercent(val)
                 if k == "left" then
                     self._layoutModified = (valP ~= t._lP) or (val ~= t._l)
                     t._lP, t._l = (valP and val), ((valP and floor(self._availAABB:width() * (valP / 100))) or val)
@@ -234,8 +234,6 @@ function UIWidget.new(style, flags)
     self.__index = UI
     self._UI = null
     self._ID = UIWidget.nextID() -- might be obsolete, because objects self identifies itself by unique table
-    self._focused = false
-    self._hovered = false
     self._childrenByZ = {}
     self._parent = self -- stand-alone widgets shouldn't exist
     self._availAABB = AABB(0, 0, 0, 0)
@@ -263,7 +261,7 @@ function UIWidget.new(style, flags)
     self.style.theme.hilit = style.theme.hilit
 
     self.flags.keepFocus = flags.keepFocus
-    self.flags.clickThru = flags.clickThru
+    self.flags.passThru = flags.passThru
     self.flags.allowOverflow = flags.allowOverflow
     self.flags.hidden = flags.hidden
     self.flags.invisible = flags.invisible
@@ -294,6 +292,22 @@ function UIWidget:draw(...)
             v:draw(...)
         end
     end
+end
+
+function UIWidget.getPercent(val)
+    return type(val) == "string" and string.match(val, "^(%-?[0-9]+)%%$")
+end
+
+-- return ID of hovered widget (may be self) or nil for none
+function UIWidget:getHovered()
+    if not self.flags.hidden then
+        local hover = nil
+        for i = #self._childrenByZ, 1, -1 do
+            hover = hover or self._childrenByZ[i]:getHovered()
+        end
+        return hover or (self:mouseIn() and not self.flags.passThru and self)
+    end
+    return nil
 end
 
 -- to override
@@ -433,34 +447,45 @@ function UIWidget:setCursor(x, y)
 end
 
 function UIWidget:isFocused()
-    return self._focused
+    return self._UI._focusedWidget == self
 end
 
 function UIWidget:dropFocus()
-    self._focused = false
+    if self._UI._focusedWidget == self then
+        self._UI._focusedWidget = nil
+    end
+end
+
+function UIWidget:requestFocus()
+    return self._UI:requestFocus(self)
 end
 
 -- true if mouse is over real AABB of self, excluding right and down border
 function UIWidget:mouseIn()
-    local mouse = self:getMouse()
-    local rAABB = self:getRealAABB()
-    return mouse.x >= rAABB.x and mouse.y >= rAABB.y and mouse.x < rAABB.x and mouse.y < rAABB.y
+    local mx, my = love.mouse.getPosition()
+    return self.style.size.x > 0 and self.style.size.y > 0 and self:getRealAABB():contains(mx, my)
 end
 
 -- true if this item is hovered (and none of direct subitems with passThru=false is hovered)
 function UIWidget:isHovered()
-    return self._hovered and not self.flag.passThru -- TODO: pull up passThru ???
+    return self._UI._hoveredWidget == self
 end
 
--- returns widget containing x, y in it's realAABB
-function UIWidget:getWidgetAt(x, y)
-    if self:getRealAABB():contains(x, y) then
-        local ans = self
+-- returns widget containing x, y in it's realAABB and if solid=true, return widgets with passThru=false FIXME:test
+function UIWidget:getWidgetAt(x, y, solid)
+    if self.flags.hidden then
+        return nil
+    end
+    local ans = self:getRealAABB():contains(x, y) and self
+    if self.flags.allowOverflow or ans then
+        if solid and self.flags.passThru then -- solid mode and it's pass thru, then not this element
+            ans = nil
+        end
         for i = #self._childrenByZ, 1, -1 do
             ans = self._childrenByZ[i]:getWidgetAt(x, y) or ans
         end
     end
-    return nil
+    return ans
 end
 
 -- returns widget by ID or nil if it doesn't exist in UI tree
@@ -477,6 +502,59 @@ function UIWidget:getWidgetByID(id)
     return nil
 end
 
+-- returns mouse relative to this element's AABB or nil,nil if outside bounds of realAABB
+function UIWidget:getRelativeMouse()
+    if not self:mouseIn() then
+        return nil, nil
+    end
+    local mx, my = love.mouse.getPosition()
+    mx, my = mx - self.style.origin.x, my - self.style.origin.y
+    return
+end
+
+--------- EVENTS ---------
+
+-- when mouse exits realAABB of this element and passThru=false
+function UIWidget:mouseEntered()
+end
+
+-- when mouse enters realAABB of this element and passThru=false
+function UIWidget:mouseExited()
+end
+
+-- whenever mouse was clicked on given object
+function UIWidget:mouseClicked(x, y, button)
+end
+
+-- whenever mouse was released on given object
+function UIWidget:mouseReleased(x, y, button)
+end
+
+-- whenever mouse wheel has been moved: x positive is horizontal right, y positive is vertical up
+function UIWidget:mouseWheelMoved(x, y)
+end
+
+-- whenever given keyboard key has been pressed with isRepeat if it was held
+function UIWidget:keyPressed(key,scancode,isRepeat)
+end
+
+-- whenever keyboard key was released
+function UIWidget:keyReleased(key,scancode)
+end
+
+-- whenever text has been entered by user -> shift+2  produces '@' as text
+function UIWidget:textInput(text)
+end
+
+-- whenever file is dropped on this element and passThru=false
+function UIWidget:fileDropped(file)
+end
+
+-- whenever directory is dropped on this element and passThru=false; path is the full platform-dependent path to directory
+function UIWidget:directoryDropped(path)
+end
+
+--------------------------
 return setmetatable(
     UIWidget,
     {

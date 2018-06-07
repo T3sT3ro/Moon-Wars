@@ -42,7 +42,11 @@ function UI.new(x, y, width, height)
         {
             _ID = UI.nextID(),
             __index = UI,
-            widget = nil,
+            _widget = nil,
+            _hoveredWidget = nil,
+            _focusedWidget = nil,
+            _clickBegin = nil,
+            _clickEnd = nil,
             origin = {x = x, y = y}, -- on screen real dimensions
             size = {x = width, y = height}, --- ^^^
             cursor = {x = x, y = y} -- relative to window's top-left corner, used for drawing UI elements
@@ -53,7 +57,7 @@ function UI.new(x, y, width, height)
 end
 
 function UI:setWidget(widget)
-    self.widget = widget
+    self._widget = widget
     widget._parent:removeWidget(widget)
     widget._parent = widget
     widget._UI = self
@@ -61,7 +65,17 @@ function UI:setWidget(widget)
 end
 
 function UI:update(dt, ...)
-    self.widget:update(dt, ...)
+    local hovered = self._widget:getHovered()
+    if hovered ~= self._hoveredWidget then -- won't trigger while same widget is hovered or no widget is hovered
+        if self._hoveredWidget and not self._hoveredWidget.flags.passThru then
+            self._hoveredWidget:mouseExited()
+        end
+        if hovered and not hovered.flags.passThru then
+            hovered:mouseEntered()
+        end
+    end
+    self._hoveredWidget = hovered
+    self._widget:update(dt, ...)
 end
 
 function UI:draw(...)
@@ -72,12 +86,131 @@ function UI:draw(...)
     -- proxy function to always draw inside UI
     love.graphics.setScissor = function(x, y, w, h)
         oldSetScissorFun(self.origin.x, self.origin.y, self.size.x, self.size.y)
-        x = x and y and w and h and love.graphics.intersectScissor(x, y, w, h)
+        return x and y and w and h and love.graphics.intersectScissor(x, y, w, h)
     end
-
-    self.widget:draw(...)
+    self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
     love.graphics.setScissor(old[1], old[2], old[3], old[4])
+end
+
+function UI:reload()
+    self.cursor.x, self.cursor.y = self.origin.x, self.origin.y
+    self:resize(self.origin.x, self.origin.y, self.size.x, self.size.y) -- resize with the same values triggers widget update
+    self._hoveredWidget = nil
+    self._focusedWidget = nil
+    self._clickBegin = nil
+    self._clickEnd = nil
+    self._widget:reload()
+end
+
+function UI:resize(x, y, width, height)
+    if type(x) ~= "number" or type(y) ~= "number" or type(width) ~= "number" or type(height) ~= "number" then
+        error("UI: invalid values to 'resize()'")
+    end
+    self.origin.x, self.origin.y = x, y
+    self.size.x, self.size.y = max(0, width), max(0, height)
+    self._widget._availAABB:set(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
+    local _ = (self._widget and self._widget:reloadLayout(true))
+end
+
+--------------EVENTS--------------
+function UI:requestFocus(widget)
+    if self._focusedWidget == nil then
+        self._focusedWidget = widget
+        return true
+    elseif self._focusedWidget == widget then
+        return true
+    else
+        return false -- FIXME: _focusedWidget:requestDropFocus() ???
+    end
+end
+
+local function mouseClickedEvt(ui, x, y, button)
+    local widget = ui:getWidgetAt(x, y)
+    if widget then
+        if widget ~= ui._focusedWidget then
+            ui._focusedWidget:dropFocus()
+        end
+        widget:mouseClicked(x, y, button)
+    elseif ui._focusedWidget then -- outside of any widget
+        ui._focusedWidget:dropFocus()
+    end
+    ui._clickBegin = widget
+end
+
+local function mouseReleasedEvt(ui, x, y, button)
+    local targetWidget = ui:getWidgetAt(x, y, true) -- target is a solid widget
+    ui._clickEnd = targetWidget
+    if ui._focusedWidget then
+        ui._focusedWidget:mouseReleased(x, y, button)
+        targetWidget:mouseReleased(x, y, button)
+    end
+    ui._clickEnd = nil
+    ui._clickBegin = nil
+end
+
+local function mouseWheelMovedEvt(x, y)
+    if self._hoveredWidget then
+        self._hoveredWidget:mouseWheelMoved(x, y)
+    end
+end
+
+function UI:keyPressedEvt(key, scancode, isrepeat)
+    if self._focusedWidget then
+        self._focusedWidget:keyPressed(key, scancode, isrepeat)
+    end
+end
+
+function UI:keyReleasedEvt(key, scancode)
+    if self._focusedWidget then
+        self._focusedWidget:keyReleased(key, scancode)
+    end
+end
+
+local function textInputEvt(ui, text)
+    if ui._focusedWidget then
+        self._focusedWidget:textInput(text)
+    end
+end
+
+local function fileDirDroppedEvt(file, isDir)
+    local mx, my = love.mouse.getPosition()
+    local targetWidget = ui:getWidgetAt(mx, my, true)
+    if targetWidget then
+        if isDir then
+            targetWidget:directoryDropped(file)
+        else
+            targetWidget:fileDropped(file)
+        end
+    end
+end
+---------------------------------
+function UI:getEventHandlers()
+    local events = {}
+    ----
+    events.mouseClicked = function(x, y, button)
+        mouseClickedEvt(self, x, y, button)
+    end
+    events.mouseReleased = function(x, y, button)
+        mouseReleasedEvt(self, x, y, button)
+    end
+    events.keyPressed = function(key, scancode, isrepeat)
+        self:keyPressedEvt(key, scancode, isrepeat)
+    end
+    events.keyReleased = function(key, scancode)
+        self:keyReleasedEvt(key, scancode)
+    end
+    events.textInput = function(text)
+        textInputEvt(self, text)
+    end
+    events.fileDropped = function(file) 
+        fileDirDroppedEvt(self, file, false)
+    end
+    events.directoryDropped = function(file) 
+        fileDirDroppedEvt(self, file, true)
+    end
+    ----
+    return events
 end
 
 function UI:getAABB()
@@ -87,12 +220,15 @@ end
 function UI:X()
     return self.origin.x
 end
+
 function UI:Y()
     return self.origin.y
 end
+
 function UI:width()
     return self.size.x
 end
+
 function UI:height()
     return self.size.y
 end
@@ -103,26 +239,6 @@ function UI:getRelativeMouse()
     mx = min(max(self.origin.x, mx), self.origin.x + self.width) - self.origin.x
     my = min(max(self.origin.y, my), self.origin.y + self.height) - self.origin.y
     return mx, my
-end
-
-function UI:reload()
-    self.cursor.x, self.cursor.y = self.origin.x, self.origin.y
-    self:resize(self.origin.x, self.origin.y, self.size.x, self.size.y) -- resize with the same values triggers widget update
-    self.widget:reload()
-end
-
-function UI:resize(x, y, width, height)
-    if type(x) ~= "number" or type(y) ~= "number" or type(width) ~= "number" or type(height) ~= "number" then
-        error("UI: invalid values to 'resize()'")
-    end
-    self.origin.x, self.origin.y = x, y
-    self.size.x, self.size.y = max(0, width), max(0, height)
-    self.widget._availAABB:set(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
-    local _ = (self.widget and self.widget:reloadLayout(true))
-end
-
-function UI.getPercent(val)
-    return type(val) == "string" and string.match(val, "^(%-?[0-9]+)%%$")
 end
 
 function UI:getRawCursor()
@@ -138,12 +254,16 @@ end
 
 -- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
 function UI:getWidgetAt(x, y)
-    return self.widget and self.widget:getWidgetAt(x, y)
+    return self._widget and self._widget:getWidgetAt(x, y)
 end
 
 -- returns widget by ID with UIWidget tree traversal
 function UI:getWidget(ID)
-    return self.widget and UI.widget:getWidgetByID(ID)
+    return self._widget and UI._widget:getWidgetByID(ID)
+end
+
+function UI:getHoveredID()
+    return self._hoveredWidget and self._hoveredWidget._ID
 end
 -------------------------------------------------------------------------------------
 return setmetatable(

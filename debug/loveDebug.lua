@@ -31,6 +31,7 @@ function love.graphics.newImage(...)
 end
 function love.graphics.newFont(...)
     print("love.graphics.newFont():", ...)
+    return ({...})[1]
 end
 function love.graphics.newText(...)
     print("love.graphics.newText():", ...)
@@ -100,9 +101,3 @@ function love.mouse.getY()
     print("love.mouse.getY():", "~>", love.mouse.y)
     return love.mouse.y
 end
-ResourceManager = {
-    get = function(...)
-        print("ResourceManager.get(): ", ...)
-        return ({...})[1]
-    end
-}

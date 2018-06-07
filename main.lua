@@ -13,6 +13,7 @@ function love.load()
     StateManager.add(GameState)
     StateManager.add(UIDebugState)
 
+    love.keyboard.setKeyRepeat(true)
     love.window.setMode(
         800, 600,
         {

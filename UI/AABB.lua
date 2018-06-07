@@ -98,7 +98,7 @@ function AABB:contains(a, b)
     if AABB.isAABB(a) then
         return self:contains(a[1].x, a[1].y) and self:contains(a[2].x, a[2].y)
     else
-        return self[1].x <= a and a < self[2].x and self[1].y <= b and b < self[2].y
+        return self[1].x <= a and a <= self[2].x and self[1].y <= b and b <= self[2].y
     end
 end
 
