@@ -111,6 +111,11 @@ function AABB:set(x1, y1, x2, y2)
     self[1].x, self[1].y, self[2].x, self[2].y = x1, y1, x2, y2
 end
 
+-- returns true if AABB has 0 size in any dimension
+function AABB:isEmpty() 
+    return self[1].x == self[2].x or self[1].y == self[2].y
+end
+
 return setmetatable(
     AABB,
     {

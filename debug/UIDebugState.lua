@@ -10,9 +10,9 @@ local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
 local margin = 30
 local GUI = UI(margin, margin, w_width - 2 * margin, w_height - 2 * margin)
 local f0 = UIWidget({origin = {x = "25%", y = "25%"}, size = {x = "50%", y = "50%"}, margin = {all = 30}})
-local f1 = UIWidget({size = {x = "100%", y = "100%"}, margin = {all = 30}})
-local f2 = UIWidget({size = {x = "50%", y = "100%"}, margin = {all = 30}}, {invisible=true})
-local f3 = UIWidget({origin = {x = "50%", y = "0%"}, size = {x = "50%", y = "100%"}})
+local f1 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
+local f2 = UIWidget({size = {x = "50%", y = "100%"}, margin = {all = 30}})
+local f3 = UIWidget({origin = {x = "5%", y = "0%"}, z = -1, size = {x = "50%", y = "100%"}})
 local f4 =
     UIWidget({origin = {x = "25%", y = "25%"}, size = {x = "50%", y = "50%"}}, {passThru = true, allowOverflow = true})
 local f5 = UIWidget({origin = {x = "80%", y = "80%"}, size = {x = "100%", y = "100%"}})
@@ -24,9 +24,11 @@ f1:addWidget(f3)
 f3:addWidget(f4)
 f4:addWidget(f5)
 
-local blueish = Color("#5050ff40")
-local redish = Color("#ff505020")
-local greenish = Color("#2bff1b20")
+
+local blueish = Color("#5050ffa0")
+local redish = Color("#ff5050a0")
+local greenish = Color("#2bff1ba0")
+local whiteish = Color("#ffffffa0")
 local white = Color("#ffffff")
 local red = Color("#ff1b2b")
 local click = {start = nil, stop = nil}
@@ -42,23 +44,50 @@ local widgetRenderer = function(self)
     else
         love.graphics.setColor(self.style.theme.bg:normalized())
     end
-    love.graphics.rectangle("fill", self:getRealAABB():normalized())
+    love.graphics.rectangle("fill", self:getAABB():normalized())
     love.graphics.setColor(red:normalized())
     love.graphics.rectangle("line", self:getAABB():normalized())
     love.graphics.setColor(white:normalized())
     love.graphics.print(self._ID, self._AABB[1].x, self._AABB[1].y)
-    
+    if self.info then
+        local cx, cy = self:getRawCursor()
+        love.graphics.print(self.info, cx+14, cy)
+    end
+
     love.graphics.setColor(original[1], original[2], original[3], original[4])
 end
 
-f0.renderer = widgetRenderer
-f1.renderer = widgetRenderer
-f2.renderer = widgetRenderer
-f3.renderer = widgetRenderer
-f4.renderer = widgetRenderer
-f5.renderer = widgetRenderer
+f0.renderer, f0.info = widgetRenderer, "main widget"
+f1.renderer, f1.info = widgetRenderer, "double container"
+f2.renderer, f2.info = widgetRenderer, "left"
+f3.renderer, f3.info = widgetRenderer, "right, overflow"
+f4.renderer, f4.info = widgetRenderer, "pass"
+f5.renderer, f5.info = widgetRenderer, "shifted"
 
 local oldHandlers = {mc, mr, wm, kp, kr, ti, fd, dd}
+function _EVTme(self)  print("EVT: me", self._ID) end
+function _EVTmx(self)  print("EVT: mx", self._ID) end
+function _EVTmc(self, x, y, button)  print("EVT: mc", self._ID, x, y, button) self:requestFocus() end
+function _EVTmr(self, x, y, button)  print("EVT: mr", self._ID, x, y, button) end
+function _EVTwm(self, x, y)  print("EVT: wm", self._ID, x, y) end
+function _EVTkp(self, key, scancode, isRepeat)  print("EVT: kp", self._ID, key, scancode, isRepeat) end
+function _EVTkr(self, key, scancode)  print("EVT: kr", self._ID, key, scancode) end
+function _EVTti(self, text)  print("EVT: ti", self._ID, text) end
+function _EVTfd(self, file)  print("EVT: fd", self._ID, file) end
+function _EVTdd(self, path)  print("EVT: dd", self._ID, path) end
+
+for _, v in ipairs({f0,f1,f2,f3,f4,f5}) do 
+    v.mouseEntered = _EVTme
+    v.mouseExited = _EVTmx
+    v.mouseClicked = _EVTmc
+    v.mouseReleased = _EVTmr
+    v.wheelMoved = _EVTwm
+    v.keyPressed = _EVTkp
+    v.keyReleased = _EVTkr
+    v.textInput = _EVTti
+    v.fileDropped = _EVTfd
+    v.directoryDropped = _EVTdd
+end
 
 function UIDebugState.init()
     oldHandlers = {
@@ -157,7 +186,7 @@ function UIDebugState.draw()
     love.graphics.rectangle("line", GUI.origin.x, GUI.origin.y, GUI.size.x, GUI.size.y)
     love.graphics.setColor(white:normalized())
     love.graphics.print("EXIT", w_width - margin)
-    local _
+    local _ -- trash variable
     if love.keyboard.isDown("a") then
         _ = love.keyboard.isDown("0") and drawAABB(f0:getAvailAABB(), blueish, " F0_A")
         _ = love.keyboard.isDown("1") and drawAABB(f1:getAvailAABB(), blueish, " F1_A")
@@ -174,13 +203,21 @@ function UIDebugState.draw()
         _ = love.keyboard.isDown("4") and drawAABB(f4:getAABB(), redish, " F4_I")
         _ = love.keyboard.isDown("5") and drawAABB(f5:getAABB(), redish, " F5_I")
     end
-    if love.keyboard.isDown("r") then
-        _ = love.keyboard.isDown("0") and drawAABB(f0:getRealAABB(), greenish, " F0_R")
-        _ = love.keyboard.isDown("1") and drawAABB(f1:getRealAABB(), greenish, " F1_R")
-        _ = love.keyboard.isDown("2") and drawAABB(f2:getRealAABB(), greenish, " F2_R")
-        _ = love.keyboard.isDown("3") and drawAABB(f3:getRealAABB(), greenish, " F3_R")
-        _ = love.keyboard.isDown("4") and drawAABB(f4:getRealAABB(), greenish, " F4_R")
-        _ = love.keyboard.isDown("5") and drawAABB(f5:getRealAABB(), greenish, " F5_R")
+    if love.keyboard.isDown("v") then
+        _ = love.keyboard.isDown("0") and drawAABB(f0:getVisibleAABB(), greenish, " F0_V")
+        _ = love.keyboard.isDown("1") and drawAABB(f1:getVisibleAABB(), greenish, " F1_V")
+        _ = love.keyboard.isDown("2") and drawAABB(f2:getVisibleAABB(), greenish, " F2_V")
+        _ = love.keyboard.isDown("3") and drawAABB(f3:getVisibleAABB(), greenish, " F3_V")
+        _ = love.keyboard.isDown("4") and drawAABB(f4:getVisibleAABB(), greenish, " F4_V")
+        _ = love.keyboard.isDown("5") and drawAABB(f5:getVisibleAABB(), greenish, " F5_V")
+    end
+    if love.keyboard.isDown("w") then
+        _ = love.keyboard.isDown("0") and drawAABB(f0:getVisibleAvailAABB(), whiteish, " F0_AV")
+        _ = love.keyboard.isDown("1") and drawAABB(f1:getVisibleAvailAABB(), whiteish, " F1_AV")
+        _ = love.keyboard.isDown("2") and drawAABB(f2:getVisibleAvailAABB(), whiteish, " F2_AV")
+        _ = love.keyboard.isDown("3") and drawAABB(f3:getVisibleAvailAABB(), whiteish, " F3_AV")
+        _ = love.keyboard.isDown("4") and drawAABB(f4:getVisibleAvailAABB(), whiteish, " F4_AV")
+        _ = love.keyboard.isDown("5") and drawAABB(f5:getVisibleAvailAABB(), whiteish, " F5_AV")
     end
     if love.keyboard.isDown("c") then
         if love.keyboard.isDown("0") then

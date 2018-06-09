@@ -109,8 +109,11 @@ function UI:resize(x, y, width, height)
     end
     self.origin.x, self.origin.y = x, y
     self.size.x, self.size.y = max(0, width), max(0, height)
-    self._widget._availAABB:set(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
-    local _ = (self._widget and self._widget:reloadLayout(true))
+    if self._widget then
+        self._widget:setAvailAABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
+        self._widget:setVisibleAvailAABB(self._widget._availAABB)
+    end
+    
 end
 
 -- true if gained focus, false otherwise
@@ -127,7 +130,58 @@ function UI:requestFocus(widget)
         end
     end
 end
---------------EVENTS--------------
+
+function UI:getAABB()
+    return AABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
+end
+
+function UI:X()
+    return self.origin.x
+end
+
+function UI:Y()
+    return self.origin.y
+end
+
+function UI:width()
+    return self.size.x
+end
+
+function UI:height()
+    return self.size.y
+end
+
+-- returns mouse relative to UI
+function UI:getRelativeMouse()
+    local mx, my = love.mouse.getX(), love.mouse.getY()
+    mx = min(max(self.origin.x, mx), self.origin.x + self.width) - self.origin.x
+    my = min(max(self.origin.y, my), self.origin.y + self.height) - self.origin.y
+    return mx, my
+end
+
+function UI:getRawCursor()
+    return self.cursor.x,self.cursor.y
+end
+
+function UI:setRawCursor(x, y)
+    self.cursor.x, self.cursor.y = x, y
+end
+
+-- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
+function UI:getWidgetAt(x, y, solid)
+    return self._widget and self._widget:getWidgetAt(x, y, solid)
+end
+
+-- returns widget by ID with UIWidget tree traversal
+function UI:getWidget(ID)
+    return self._widget and UI._widget:getWidgetByID(ID)
+end
+
+function UI:getHoveredID()
+    return self._hoveredWidget and self._hoveredWidget._ID
+end
+
+--============EVENTS============--
 
 local function mouseClickedEvt(ui, x, y, button)
     local widget = ui:getWidgetAt(x, y, true)
@@ -163,20 +217,21 @@ local function wheelMovedEvt(ui, x, y)
     end
 end
 
--- can override
+-- can override, currently captures are active for focused element
 function UI:keyPressedEvt(key, scancode, isrepeat)
     if self._focusedWidget then
         self._focusedWidget:keyPressed(key, scancode, isrepeat)
     end
 end
 
--- can override
+-- can override, currently captures are active for focused element
 function UI:keyReleasedEvt(key, scancode)
     if self._focusedWidget then
         self._focusedWidget:keyReleased(key, scancode)
     end
 end
 
+-- captures only for focused widget
 local function textInputEvt(ui, text)
     if ui._focusedWidget then
         ui._focusedWidget:textInput(text)
@@ -201,7 +256,8 @@ local function fileDirDroppedEvt(ui, file, isDir)
         end
     end
 end
-------------------
+
+--------
 function UI:getEventHandlers()
     local events = {}
     ----
@@ -232,59 +288,8 @@ function UI:getEventHandlers()
     ----
     return events
 end
----------------------------------
-function UI:getAABB()
-    return AABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
-end
+--==============================--
 
-function UI:X()
-    return self.origin.x
-end
-
-function UI:Y()
-    return self.origin.y
-end
-
-function UI:width()
-    return self.size.x
-end
-
-function UI:height()
-    return self.size.y
-end
-
--- returns mouse relative to UI
-function UI:getRelativeMouse()
-    local mx, my = love.mouse.getX(), love.mouse.getY()
-    mx = min(max(self.origin.x, mx), self.origin.x + self.width) - self.origin.x
-    my = min(max(self.origin.y, my), self.origin.y + self.height) - self.origin.y
-    return mx, my
-end
-
-function UI:getRawCursor()
-    return {x = self.cursor.x, y = self.cursor.y}
-end
-
-function UI:setRawCursor(x, y)
-    if type(x) == "table" then
-        x, y = x.x, x.y
-    end
-    self.cursor.x, self.cursor.y = x, y
-end
-
--- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
-function UI:getWidgetAt(x, y, solid)
-    return self._widget and self._widget:getWidgetAt(x, y, solid)
-end
-
--- returns widget by ID with UIWidget tree traversal
-function UI:getWidget(ID)
-    return self._widget and UI._widget:getWidgetByID(ID)
-end
-
-function UI:getHoveredID()
-    return self._hoveredWidget and self._hoveredWidget._ID
-end
 -------------------------------------------------------------------------------------
 return setmetatable(
     UI,

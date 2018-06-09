@@ -13,7 +13,14 @@ UIWidget.__index = UIWidget
 --- % values are relative to available space + widgets's layout policy
 
 function UIWidget.isUIWidget(o)
-    return getmetatable(o) == UIWidget
+    local mt = getmetatable(o)
+    while mt ~= UIWidget do
+        if mt == nil then
+            return false
+        end
+        mt = getmetatable(mt)
+    end
+    return true
 end
 
 function UIWidget.isID(ID)
@@ -187,16 +194,16 @@ function UIWidget.new(style, flags)
                 local valP = UIWidget.getPercent(val)
                 if k == "left" then
                     self._layoutModified = (valP ~= t._lP) or (val ~= t._l)
-                    t._lP, t._l = (valP and val), ((valP and floor(self._availAABB:width() * (valP / 100))) or val)
+                    t._lP, t._l = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
                 elseif k == "right" then
                     self._layoutModified = (valP ~= t._rP) or (val ~= t._r)
-                    t._rP, t._r = (valP and val), ((valP and floor(self._availAABB:width() * (valP / 100))) or val)
+                    t._rP, t._r = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
                 elseif k == "up" then
                     self._layoutModified = (valP ~= t._uP) or (val ~= t._u)
-                    t._uP, t._u = (valP and val), ((valP and floor(self._availAABB:height() * (valP / 100))) or val)
+                    t._uP, t._u = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
                 elseif k == "down" then
                     self._layoutModified = (valP ~= t._dP) or (val ~= t._d)
-                    t._dP, t._d = (valP and val), ((valP and floor(self._availAABB:height() * (valP / 100))) or val)
+                    t._dP, t._d = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
                 elseif k == "x" then -- use previous
                     T.left = val
                     T.right = val
@@ -236,8 +243,9 @@ function UIWidget.new(style, flags)
     self._ID = UIWidget.nextID() -- might be obsolete, because objects self identifies itself by unique table
     self._childrenByZ = {}
     self._parent = self -- stand-alone widgets shouldn't exist
-    self._availAABB = AABB(0, 0, 0, 0)
-    self._AABB = AABB(0, 0, 0, 0)
+    self._visibleAvailAABB = AABB(0, 0, 0, 0) -- AABB inside availAABB that will be actually displayed
+    self._availAABB = AABB(0, 0, 0, 0) -- virtual space the widget draw onto
+    self._AABB = AABB(0, 0, 0, 0) -- requested AABB according to availAABB [- parent.margins]
     self._layoutModified = true
     self.renderer = function(self, ...)
     end -- renderer of this widget
@@ -280,7 +288,7 @@ function UIWidget:update(...) -- TODO: status passed during tree traversal (anyH
 end
 
 -- guarantee: elements are setup properly
------ scissor is set to available space
+----- scissor is set to visible available space
 function UIWidget:draw(...)
     if not self.flags.hidden then
         if not self.flags.invisible then
@@ -288,7 +296,7 @@ function UIWidget:draw(...)
         end
         for _, v in ipairs(self._childrenByZ) do
             -- TODO: allow overflow flag implementation as set scissors to parent
-            love.graphics.setScissor(v._availAABB:normalized())
+            love.graphics.setScissor(v._visibleAvailAABB:cut(v._AABB):normalized())
             v:draw(...)
         end
     end
@@ -314,7 +322,7 @@ end
 function UIWidget:reloadLayoutSelf()
 end
 
--- guarantee - availAABB is set properly
+-- guarantee: availAABB and visibleAvailAABB set properly
 function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was updated
     if not self.flags.hidden and doReload or self._layoutModified then -- resources save on hidden objects
         -- assigning has sideeffect of recalculating exact sizes
@@ -328,16 +336,24 @@ function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was u
         self.style.margin.down = self.style.margin:value("down")
         --FIXME: thorough testing
 
-        -- self AABB
+        -- self AABB relative to availAABB
         local x1 = self._availAABB[1].x + self.style.origin.x
         local y1 = self._availAABB[1].y + self.style.origin.y
         self._AABB:set(x1, y1, x1 + self.style.size.x, y1 + self.style.size.y)
 
         self:reloadLayoutSelf()
-        -- availAABB and reloadLayout for children
+        -- z-index children sort
+        table.sort(
+            self._childrenByZ,
+            function(w1, w2)
+                return w1.style.z < w2.style.z
+            end
+        )
+        -- availAABB, visibleAvailAABB and reloadLayout for children
         for _, v in ipairs(self._childrenByZ) do
             if (self.flags.allowOverflow) then
                 v._availAABB:set(self._availAABB)
+                v._visibleAvailAABB:set(self._visibleAvailAABB)
             else
                 v._availAABB:set(self._AABB)
                 v._availAABB:contract(
@@ -346,7 +362,7 @@ function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was u
                     self.style.margin.down,
                     self.style.margin.up
                 )
-                v._availAABB = v._availAABB:cut(self._availAABB)
+                v._visibleAvailAABB:set(v._availAABB:cut(self._visibleAvailAABB))
             end
             v:reloadLayout(doReload or self._layoutModified)
         end
@@ -363,16 +379,7 @@ end
 function UIWidget:reload(...)
     self._hovered = false
     self:dropFocus()
-
-    -- z-index children sort
-    table.sort(
-        self._childrenByZ,
-        function(w1, w2)
-            return w1.z < w2.z
-        end
-    )
     self:reloadSelf()
-
     self:reloadLayout(true)
 
     for _, v in ipairs(self._childrenByZ) do
@@ -407,13 +414,17 @@ function UIWidget:getAABB()
 end
 
 -- realAABB as displayed on screen
-function UIWidget:getRealAABB()
-    return self._availAABB:cut(self._AABB)
+function UIWidget:getVisibleAABB()
+    return self._AABB:cut(self._visibleAvailAABB)
 end
 
 -- copy of availAABB
 function UIWidget:getAvailAABB()
     return AABB(self._availAABB)
+end
+
+function UIWidget:getVisibleAvailAABB()
+    return AABB(self._visibleAvailAABB)
 end
 
 -- copy of origin
@@ -423,8 +434,8 @@ end
 
 -- cursor relative to self
 function UIWidget:getCursor()
-    local c = self._UI.cursor
-    return {x = c.x - self._AABB[1].x, y = c.y - self._AABB[1].y}
+    local cx, cy = self._UI:getRawCursor()
+    return cx - self._AABB[1].x, cy - self._AABB[1].y
 end
 
 -- proxy to parent
@@ -437,12 +448,20 @@ function UIWidget:setRawCursor(x, y)
     self._UI:setRawCursor(x, y)
 end
 
--- sets cursor relative to this elements realAABB corner
+-- sets cursor relative to this elements requested AABB corner
 function UIWidget:setCursor(x, y)
-    if type(x) == "table" then
-        x, y = x.x, x.y
-    end
-    self._UI.cursor.x, self._UI.cursor.y = self._AABB[1].x + x, self._AABB[1].y + y
+    self._UI:setRawCursor(self._AABB[1].x + x, self._AABB[1].y + y)
+end
+
+-- proxy function for setting avail AABB and triggering UI reload
+function UIWidget:setAvailAABB(x1, y1, x2, y2)
+    self._availAABB:set(x1, y1, x2, y2)
+    self:reloadLayout()
+end
+
+-- sets visible AABB, doens't trigger reload, because effect is up to date during draw()
+function UIWidget:setVisibleAvailAABB(x1, y1, x2, y2)
+    self._visibleAvailAABB:set(x1, y1, x2, y2)
 end
 
 function UIWidget:isFocused()
@@ -468,7 +487,7 @@ end
 -- true if mouse is over real AABB of self, excluding right and down border
 function UIWidget:mouseIn()
     local mx, my = love.mouse.getPosition()
-    return self.style.size.x > 0 and self.style.size.y > 0 and self:getRealAABB():contains(mx, my)
+    return not self._AABB:isEmpty() and self:getVisibleAABB():contains(mx, my)
 end
 
 -- true if this item is hovered (and none of direct subitems with passThru=false is hovered)
@@ -481,14 +500,19 @@ function UIWidget:getWidgetAt(x, y, solid)
     if self.flags.hidden then
         return nil
     end
-    local ans = self.style.size.x > 0 and self.style.size.y > 0 and self:getRealAABB():contains(x, y) and self
+    local ans = self.style.size.x > 0 and self.style.size.y > 0 and self:getVisibleAABB():contains(x, y) and self
     if self.flags.allowOverflow or ans then
         if solid and self.flags.passThru then -- solid mode and it's pass thru, then not this element
             ans = nil
         end
+        local cc = nil
         for i = #self._childrenByZ, 1, -1 do
-            ans = self._childrenByZ[i]:getWidgetAt(x, y, solid) or ans
+            cc = cc or self._childrenByZ[i]:getWidgetAt(x, y, solid)
+            if cc then
+                break
+            end
         end
+        ans = cc or ans
     end
     return ans
 end
