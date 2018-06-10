@@ -7,12 +7,14 @@ local StateManager = require "StateManager"
 
 local GameLogic = {}
 
-local _curUnitIdx = 0
+local _curPlayer = nil
+local _curUnitIdx = nil
+local _unitsInOrder = {{},{}}
 local _curUnit = nil
+
 local _startActionPoints = 10
 local _curActionPoints = _startActionPoints
 local _actors = {}
-local _unitsInOrder = {}
 
 function GameLogic.getCurUnit()
     return _curUnit
@@ -67,25 +69,22 @@ function GameLogic.init()
     local initActors = { createInitNeutralActors(0), createInitActors(1), createInitActors(2) }
     map.addInitActors(initActors)
 
-    local addedUnits = {0, 0}
     for _, unit in ipairs(_actors["Unit"]) do
-        local added = addedUnits[unit.playerId]
-        local orderNum = unit.playerId + 2 * added
-        _unitsInOrder[orderNum] = unit
-        addedUnits[unit.playerId] = added + 1
+        table.insert(_unitsInOrder[unit.playerId], unit)
     end
-    _curUnitIdx = 1
-    _curUnit = _unitsInOrder[_curUnitIdx]
+
+    _curPlayer = 1
+    _curUnitIdx = {1, 1}
+    _curUnit = _unitsInOrder[1][1]
 end
 
 function GameLogic.clear()
     _actors = {}
-    _unitsOrder = {}
+    _unitsOrder = {{},{}}
 end
 
 function GameLogic.doAction(actionName, ...)
     local action = helper.actions[actionName]
-    print("action: " .. tostring(action))
     if  action == nil or 
         not helper.checkArgs(action.argsTypes, ...) or 
         action.neededPoints > _curActionPoints then
@@ -100,28 +99,39 @@ local function endRound()
     print("Round has ended")
 end
 
-local function nextUnit()
-    _curUnitIdx = _curUnitIdx + 1
-    if _curUnitIdx > #_unitsInOrder then
-        _curUnitIdx = 1
-        endRound()
+local function endGame(winnerId)
+    print("Player " .. tostring(winnerId) .. " has won!")
+    StateManager.load("MainMenuState")
+end
+
+local function nextUnit(playerId)
+    local curIdx = _curUnitIdx[playerId] + 1
+    if curIdx > #_unitsInOrder[playerId] then
+        curIdx= 1
     end
-    _curUnit = _unitsInOrder[_curUnitIdx]
-    _curActionPoints = _startActionPoints
+    _curUnitIdx[playerId] = curIdx
+    return _unitsInOrder[playerId][curIdx]
 end
 
 local function endTurn()
     print("turn ended")
     
-    local stopId = _curUnit.id
-    local curPlayerId = _curUnit.playerId
-    nextUnit()
-    while _curUnit.health <= 0 or _curUnit.playerId == curPlayerId and _curUnit.id ~= stopId do
-        nextUnit()
+    local prevPlayer = _curPlayer
+    _curPlayer = _curPlayer + 1
+    if _curPlayer > 2 then
+        _curPlayer = 1 
     end
-    
-    if _curUnit.id == stopId then -- all units of enemy are dead 
-        endGame(_curUnit.playerId)
+
+    _curUnit = nextUnit(_curPlayer)
+    local iterations = 0
+    local stopVal = #_unitsInOrder[_curPlayer]
+    while _curUnit.health <= 0  and iterations < stopVal do
+        _curUnit = nextUnit(_curPlayer)
+        iterations = iterations + 1
+    end
+
+    if iterations == stopVal then
+        endGame(prevPlayer)
     end
 end
 helper.addAction("endTurn", endTurn, {}, 0)
@@ -139,11 +149,6 @@ local function move(x, y)
 end
 helper.addAction("move", move, {"number", "number"}, 0)
 
-local function endGame(winnerId)
-    print("Player " .. tostring(winnerId) .. " has won!")
-    StateManager.load("MainMenuState")
-end
-
 local function attack(x, y)
     if map.distance(_curUnit.x, _curUnit.y, x, y) <= _curUnit.range then
         local enemy = map.getActorByStat(x, y, "health")
@@ -154,7 +159,7 @@ local function attack(x, y)
         enemy.health = enemy.health - _curUnit.attack
         if enemy.health <= 0  then
             if enemy.type == "Unit" then
-                enemy.die()
+                enemy:die()
             end
             if enemy.type == "Nexus" then
                 endGame(_curUnit.playerId)
@@ -164,7 +169,7 @@ local function attack(x, y)
     end
     return false
 end
-helper.addAction("attack", attack, {"number", "number"}, 1)
+helper.addAction("attack", attack, {"number", "number"}, 0)
 
 local function getNexus(playerId)
     local nexuses = _actors["Nexus"]

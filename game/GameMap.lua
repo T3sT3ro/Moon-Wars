@@ -184,11 +184,22 @@ function GameMap.addActor(actor)
     map[actor.x][actor.y].actors[actor.id] = actor
 end
 
-function GameMap.getActorByStat(x, y, statName) -- first actor on (x,y) that has statName field
+function GameMap.getActorByStat(x, y, statName)
+    if map[x] == nil or map[x][y] == nil then return nil end
+    for _, actor in pairs(map[x][y].actors) do
+        if actor[statName] ~= nil then
+            return actor
+        end
+    end
     return nil
 end
 
-function GameMap.getActorByName(x, y, actorName) -- first actor on (x,y) that has name == actorName
+function GameMap.getActorByName(x, y, actorName)
+    for _, actor in pairs(map[x][y].actors) do
+        if actor.name == actorName then
+            return actor
+        end
+    end
     return nil
 end
 

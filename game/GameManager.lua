@@ -13,42 +13,57 @@ function GameManager.clear()
     map.clear()
 end
 
-local _lastInput = 0.5
-local function handleInput(dt)
-    _lastInput = _lastInput + dt
-    if _lastInput < 0.5 then
-        return
-    end
-
+local function moveHandler(key)
     local dx, dy = 0, 0
-    if love.keyboard.isDown('w') then
-        print("w pressed")
+    if key == 'w' then
         dy = -1        
-    elseif love.keyboard.isDown('s') then
-        print("s pressed")
+    elseif key == 's' then
         dy = 1
-    elseif love.keyboard.isDown('a') then
-        print("a pressed")
+    elseif key == 'a' then
         dx = -1
-    elseif love.keyboard.isDown('d') then
-        print("d pressed")
+    elseif key == 'd' then
         dx = 1
-    elseif love.keyboard.isDown('e') then
-        print("handle end")
-        logic.doAction("endTurn")
-        _lastInput = 0
     end
 
     local x = logic.getCurUnit().x
     local y = logic.getCurUnit().y
-    if dx ~= 0 or dy ~= 0 then
-        _lastInput = 0 
-        print("handle move: " .. tostring(logic.doAction("move", x + dx, y + dy)))
+    print("move handler: " .. tostring(logic.doAction("move", x + dx, y + dy)))
+end
+
+local function endTurnHandler()
+    print("end turn handler")
+    logic.doAction("endTurn")
+end
+
+local function attackHandler()
+    print("attack handler")
+    
+    local curUnit = logic.getCurUnit()
+    local dx = {1, -1, 0, 0}
+    local dy = {0, 0, -1, 1}
+    for i = 1, 4 do
+        local x = curUnit.x + dx[i]
+        local y = curUnit.y + dy[i]
+        logic.doAction("attack", x, y)
     end
 end
 
+local _inputHandlers = 
+{
+    wsad =  moveHandler,
+    e = endTurnHandler,
+    q = attackHandler
+}
+
+function love.keypressed( key, isrepeat)
+    for keys, handler in pairs(_inputHandlers) do
+        if keys:find(key) ~= nil then
+            handler(key)
+        end
+    end
+end    
+
 function GameManager.update(dt)
-    handleInput(dt)
     map.update(dt)
 end
 

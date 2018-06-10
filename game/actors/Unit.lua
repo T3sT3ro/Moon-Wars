@@ -74,6 +74,11 @@ function Unit:die()
     map.removeActor(self)
 end
 
+function Unit:draw()
+    Actor.draw(self)
+    love.graphics.print(self.health, self.x*32, self.y*32)
+end
+
 function Unit:debugInfo()
     Actor.debugInfo(self) 
 end

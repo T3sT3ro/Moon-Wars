@@ -19,7 +19,6 @@ function GameLogicHelper.checkArgs(argsTypes, ...)
             return false
         end
     end
-    print("args ok")
     return true
 end
 
