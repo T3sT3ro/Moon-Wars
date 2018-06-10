@@ -184,4 +184,12 @@ function GameMap.addActor(actor)
     map[actor.x][actor.y].actors[actor.id] = actor
 end
 
+function GameMap.getActorByStat(x, y, statName) -- first actor on (x,y) that has statName field
+    return nil
+end
+
+function GameMap.getActorByName(x, y, actorName) -- first actor on (x,y) that has name == actorName
+    return nil
+end
+
 return GameMap

@@ -3,6 +3,7 @@ local map = require "game/GameMap"
 local Nexus = require "game/actors/Nexus"
 local Unit = require "game/actors/Unit"
 local Factory = require "game/actors/ActorFactory"
+local StateManager = require "StateManager"
 
 local GameLogic = {}
 
@@ -99,9 +100,7 @@ local function endRound()
     print("Round has ended")
 end
 
-local function endTurn()
-    print("turn ended")
-
+local function nextUnit()
     _curUnitIdx = _curUnitIdx + 1
     if _curUnitIdx > #_unitsInOrder then
         _curUnitIdx = 1
@@ -109,6 +108,21 @@ local function endTurn()
     end
     _curUnit = _unitsInOrder[_curUnitIdx]
     _curActionPoints = _startActionPoints
+end
+
+local function endTurn()
+    print("turn ended")
+    
+    local stopId = _curUnit.id
+    local curPlayerId = _curUnit.playerId
+    nextUnit()
+    while _curUnit.health <= 0 or _curUnit.playerId == curPlayerId and _curUnit.id ~= stopId do
+        nextUnit()
+    end
+    
+    if _curUnit.id == stopId then -- all units of enemy are dead 
+        endGame(_curUnit.playerId)
+    end
 end
 helper.addAction("endTurn", endTurn, {}, 0)
 
@@ -125,16 +139,26 @@ local function move(x, y)
 end
 helper.addAction("move", move, {"number", "number"}, 0)
 
+local function endGame(winnerId)
+    print("Player " .. tostring(winnerId) .. " has won!")
+    StateManager.load("MainMenuState")
+end
+
 local function attack(x, y)
     if map.distance(_curUnit.x, _curUnit.y, x, y) <= _curUnit.range then
-        local enemy = map.getActor(x, y, "health") -- look for actor with "health" field
+        local enemy = map.getActorByStat(x, y, "health")
         if enemy == nil or enemy.playerId == _curUnit.playerId then
             return false
         end
 
         enemy.health = enemy.health - _curUnit.attack
-        if enemy.health <= 0 then
-            enemy.die()
+        if enemy.health <= 0  then
+            if enemy.type == "Unit" then
+                enemy.die()
+            end
+            if enemy.type == "Nexus" then
+                endGame(_curUnit.playerId)
+            end
         end
         return true
     end
@@ -157,13 +181,20 @@ local function craft(name)
     if map.distance(nexus.x, nexus.y, _curUnit.x, _curUnit.y) > 1 then
         return false
     end
+    
+    local item = nexus:craft(name, _curUnit)
+    if item == nil then
+        return false
+    end
 
+    item:setPos(nexus.x, nexus.y)
+    map.addActor(item)
     return true
 end
 helper.addAction("craft", craft, {"string"}, 1)
 
 local function pickup(name, x, y)
-    local item = map.getActor(name, x, y)
+    local item = map.getActorByName(x, y, name)
     if item == nil then
         return false
     end

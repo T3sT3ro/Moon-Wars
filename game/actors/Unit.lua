@@ -1,4 +1,5 @@
 local Actor = require "game/actors/Actor"
+local map = require "game/GameMap"
 
 local Unit = Actor:new({type = "Unit", health = 100, movePenalty = 0, attack = 10, defense = 0, range = 1, 
                         equipment = {}, equipedWeapon = nil, equipedArmor = nil, equipedArtifact = nil})
@@ -54,6 +55,23 @@ function Unit:useItem(itemName)
     end
 
     item:onUse(self)
+end
+
+function Unit:die()
+    for _, item in ipairs(self.equipment) do
+        item:setPos(self.x, self.y)
+        map.addActor(item)
+    end
+
+    for _, field in pairs(equipableItemTypes) do
+        if self[field] ~= nil then
+            local item = self[field]
+            item:setPos(self.x, self.y)
+            map.addActor(item)
+        end
+    end
+
+    map.removeActor(self)
 end
 
 function Unit:debugInfo()
