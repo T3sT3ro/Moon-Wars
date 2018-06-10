@@ -48,7 +48,7 @@ end
 ---- draggable
 function UIWidget.new(style, flags)
     local valPred = function(x)
-        return type(x) == "number" or type(x) == "string" and string.match(x, "^%-?[0-9]+%%$") == x
+        return x == nil or type(x) == "number" or type(x) == "string" and string.match(x, "^%-?[0-9]+%%$") == x
     end
     Typeassert(
         style,
@@ -60,7 +60,10 @@ function UIWidget.new(style, flags)
                 allign = {
                     "ANY",
                     "nil",
-                    {x = {"ANY", "R:center", "R:left", "R:right"}, y = {"ANY", "R:center", "R:up", "R:down"}}
+                    {
+                        x = {"ANY", "nil", "R:center", "R:left", "R:right"},
+                        y = {"ANY", "nil", "R:center", "R:up", "R:down"}
+                    }
                 },
                 origin = {"ANY", "nil", {x = valPred, y = valPred}},
                 size = {"ANY", "nil", {x = valPred, y = valPred}},
@@ -102,25 +105,60 @@ function UIWidget.new(style, flags)
     )
 
     --- DEFAULT STYLE
-    style = style or {}
+    style = style or {allign = {}, origin = {}, size = {}, margin = {}, theme = {}}
     style.z = style.z or 0
-    style.allign = style.allign or {x = "center", y = "center"} -- TODO: apply in AABB calculation
-    style.origin = style.origin or {x = 0, y = 0}
-    style.size = style.size or {x = "100%", y = "100%"}
-    style.margin = style.margin or {left = 0, right = 0, up = 0, down = 0}
-    style.theme = style.theme or {bg, fg, fg_focus, hilit, hilit_focus}
+    style.allign = style.allign or {}
+    style.allign.x = style.allign.x or "center"
+    style.allign.y = style.allign.y or "center"
+    style.origin = style.origin or {}
+    style.origin.x = style.origin.x or 0
+    style.origin.y = style.origin.y or 0
+    style.size = style.size or {}
+    style.size.x = style.size.x or "100%"
+    style.size.y = style.size.y or "100%"
+    style.margin = style.margin or {}
+    style.margin.left = style.margin.left or 0
+    style.margin.right = style.margin.right or 0
+    style.margin.up = style.margin.up or 0
+    style.margin.down = style.margin.down or 0
+    style.theme = style.theme or {}
 
     --- DEFAULT FLAGS
     flags = flags or {}
-    flags.keepFocus = flags.keepFocus or false -- TODO: will keep focus until dropFocus() is not
-    flags.passThru = flags.passThru or false -- TODO: true for element to not register click
+    flags.keepFocus = flags.keepFocus or false -- will keep focus until dropFocus() is not
+    flags.passThru = flags.passThru or false -- true for element to not register click
     flags.allowOverflow = flags.allowOverflow or false -- TODO: allowOverflow by IDs
     flags.hidden = flags.hidden or false -- FIXME: test
     flags.invisible = flags.invisible or false -- doesn't render self but renders children
     flags.draggable = flags.draggable or false -- TODO: dragged by margin and all pass-thru inner elements
 
     --- OBJECT CONSTRUCTION BEGIN
-    local self = setmetatable({style = {}, flags = {}}, UIWidget) -- FIXME: refactor, move to #120
+    local self = setmetatable({style = {}, flags = {}}, UIWidget)
+    -----------------
+    self.style.allign =
+        setmetatable(
+        {},
+        {
+            _x,
+            _y,
+            __index = function(t, k)
+                t = getmetatable(t)
+                return (k == "x" and t._x) or (k == "_y" and t._y)
+            end,
+            __newindex = function(t, k, v)
+                t = getmetatable(t)
+                if k == "x" then
+                    local oldX = t._x
+                    t._x = (v == "left" or v == "center" or v == "right") and v
+                    self._layoutModified = (oldX ~= v)
+                elseif k == "y" then
+                    local oldY = t._y
+                    t._y = (v == "up" or v == "center" or v == "down") and v
+                    self._layoutModified = (oldY ~= v)
+                end
+            end
+        }
+    )
     -----------------
     self.style.origin =
         setmetatable(
@@ -132,11 +170,11 @@ function UIWidget.new(style, flags)
             _xP, -- percentages -
             _yP,
             __index = function(t, k)
-                local t = getmetatable(t)
+                t = getmetatable(t)
                 return (k == "x" and t._x) or (k == "y" and t._y) or (k == "value" and t._value) -- returns value in pixels
             end,
             __newindex = function(t, k, val)
-                local t = getmetatable(t)
+                t = getmetatable(t)
                 local valP = UIWidget.getPercent(val)
 
                 if k == "x" then
@@ -181,7 +219,7 @@ function UIWidget.new(style, flags)
             _uR,
             _dP,
             __index = function(T, k)
-                local t = getmetatable(T)
+                t = getmetatable(T)
                 return (k == "left" and t._l) or (k == "right" and t._r) or (k == "up" and t._u) or
                     (k == "down" and t._d) or
                     (k == "x" and (t._l == t._r) and t._l) or
@@ -190,7 +228,7 @@ function UIWidget.new(style, flags)
                     (k == "value" and t._value)
             end,
             __newindex = function(T, k, val)
-                local t = getmetatable(T)
+                t = getmetatable(T)
                 local valP = UIWidget.getPercent(val)
                 if k == "left" then
                     self._layoutModified = (valP ~= t._lP) or (val ~= t._l)
@@ -336,10 +374,31 @@ function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was u
         self.style.margin.down = self.style.margin:value("down")
         --FIXME: thorough testing
 
-        -- self AABB relative to availAABB
-        local x1 = self._availAABB[1].x + self.style.origin.x
-        local y1 = self._availAABB[1].y + self.style.origin.y
-        self._AABB:set(x1, y1, x1 + self.style.size.x, y1 + self.style.size.y)
+        -- self AABB relative to availAABB and allign
+        local x1 = self._availAABB[1].x
+        local y1 = self._availAABB[1].y
+        local x2 = x1 + self.style.size.x
+        local y2 = y1 + self.style.size.y
+        if self.style.allign.x == "center" then
+            local dx = floor((self._availAABB:width() - self.style.size.x) / 2)
+            x1, x2 = x1 + dx, x2 + dx
+        elseif self.style.allign.x == "right" then
+            local dx = self._availAABB:width() - self.style.size.x
+            x1, x2 = x1 + dx, x2 + dx
+        end
+        if self.style.allign.y == "center" then
+            local dy = floor((self._availAABB:height() - self.style.size.y) / 2)
+            y1, y2 = y1 + dy, y2 + dy
+        elseif self.style.allign.y == "down" then
+            local dy = self._availAABB:height() - self.style.size.y
+            y1, y2 = y1 + dy, y2 + dy
+        end
+        self._AABB:set(
+            x1 + self.style.origin.x,
+            y1 + self.style.origin.y,
+            x2 + self.style.origin.x,
+            y2 + self.style.origin.y
+        )
 
         self:reloadLayoutSelf()
         -- z-index children sort
