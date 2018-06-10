@@ -112,6 +112,7 @@ function UI:resize(x, y, width, height)
     if self._widget then
         self._widget:setAvailAABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
         self._widget:setVisibleAvailAABB(self._widget._availAABB)
+        self._widget:reloadLayout()
     end
     
 end

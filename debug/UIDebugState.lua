@@ -14,7 +14,7 @@ local f1 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
 local f2 = UIWidget({allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
 local f3 = UIWidget({allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
 local f4 = UIWidget({size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
-local f5 = UIWidget({origin = {x = "80%", y = "80%"}, size = {x = "100%", y = "100%"}})
+local f5 = UIWidget({origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
 
 GUI:setWidget(f0)
 f0:addWidget(f1)
@@ -45,7 +45,6 @@ local widgetRenderer = function(self)
     love.graphics.rectangle("fill", self:getAABB():normalized())
     love.graphics.setColor(red:normalized())
     love.graphics.rectangle("line", self:getAABB():normalized())
-    if self._AABB[2].x > self._availAABB[2].x then print("DA:", self._AABB[2].x, self._availAABB[2].x) end
     love.graphics.setColor(white:normalized())
     love.graphics.print(self._ID, self._AABB[1].x, self._AABB[1].y)
     if self.info then
@@ -58,41 +57,41 @@ end
 
 f0.renderer, f0.info = widgetRenderer, "main widget"
 f1.renderer, f1.info = widgetRenderer, "double container"
-f2.renderer, f2.info = widgetRenderer, "left"
+f2.renderer, f2.info = widgetRenderer, "left\nblink"
 f3.renderer, f3.info = widgetRenderer, "right"
 f4.renderer, f4.info = widgetRenderer, "pass\nover"
-f5.renderer, f5.info = widgetRenderer, "shifted"
+f5.renderer, f5.info = widgetRenderer, "shifted\nmov"
 
 local oldHandlers = {mc, mr, wm, kp, kr, ti, fd, dd}
-function _EVTme(self)
+local function _EVTme(self)
     print("EVT: me", self._ID)
 end
-function _EVTmx(self)
+local function _EVTmx(self)
     print("EVT: mx", self._ID)
 end
-function _EVTmc(self, x, y, button)
+local function _EVTmc(self, x, y, button)
     print("EVT: mc", self._ID, x, y, button)
     self:requestFocus()
 end
-function _EVTmr(self, x, y, button)
+local function _EVTmr(self, x, y, button)
     print("EVT: mr", self._ID, x, y, button)
 end
-function _EVTwm(self, x, y)
+local function _EVTwm(self, x, y)
     print("EVT: wm", self._ID, x, y)
 end
-function _EVTkp(self, key, scancode, isRepeat)
+local function _EVTkp(self, key, scancode, isRepeat)
     print("EVT: kp", self._ID, key, scancode, isRepeat)
 end
-function _EVTkr(self, key, scancode)
+local function _EVTkr(self, key, scancode)
     print("EVT: kr", self._ID, key, scancode)
 end
-function _EVTti(self, text)
+local function _EVTti(self, text)
     print("EVT: ti", self._ID, text)
 end
-function _EVTfd(self, file)
+local function _EVTfd(self, file)
     print("EVT: fd", self._ID, file)
 end
-function _EVTdd(self, path)
+local function _EVTdd(self, path)
     print("EVT: dd", self._ID, path)
 end
 
@@ -107,6 +106,36 @@ for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
     v.textInput = _EVTti
     v.fileDropped = _EVTfd
     v.directoryDropped = _EVTdd
+end
+
+f2.updater = function(self, dt)
+    self.cntr = self.cntr or 0
+    self.cntr = self.cntr + 1
+    if self:isHovered() and self.cntr > 50 then
+        if self.style.allign.y == "up" then
+            self.style.allign.y = "down"
+        elseif self.style.allign.y == "down" then
+            self.style.allign.y = "up"
+        end
+        self.cntr = 0
+    end
+end
+
+f5.updater = function(self, dt)
+    if self:isHovered() then
+        if love.keyboard.isDown("left") then
+            self.style.origin.x = self.style.origin.x - 1
+        end 
+        if love.keyboard.isDown("right") then
+            self.style.origin.x = self.style.origin.x + 1
+        end 
+        if love.keyboard.isDown("up") then
+            self.style.origin.y = self.style.origin.y - 1
+        end
+        if love.keyboard.isDown("down") then
+            self.style.origin.y = self.style.origin.y + 1
+        end
+    end
 end
 
 function UIDebugState.init()

@@ -49,8 +49,7 @@ love.keyboard["i"] = true
 love.keyboard["c"] = true
 love.keyboard["1"] = true
 
-love.mouse.x, love.mouse.y = 320, 280
-love.mousepressed(320,280,1)
+love.mouse.x, love.mouse.y = 350, 280
 UDB.update()
 UDB.draw()
 love.mouse.x, love.mouse.y = 500, 300

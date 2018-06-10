@@ -35,7 +35,7 @@ end
 -- style:
 ---- z-index
 ---- allign = {x=[center|left|right], y=[center|up|down]}
----- origin = {x, y}
+---- origin = {x, y} (according to position where it would normally be taking allign into account)
 ---- size = {x, y}
 ---- margin = [ {all} | {x, y} | {left, right, up, down} ]
 ---- theme = {bg, fg, fg_focus, hilit, hilit_focus}
@@ -143,18 +143,18 @@ function UIWidget.new(style, flags)
             _y,
             __index = function(t, k)
                 t = getmetatable(t)
-                return (k == "x" and t._x) or (k == "_y" and t._y)
+                return (k == "x" and t._x) or (k == "y" and t._y)
             end,
             __newindex = function(t, k, v)
                 t = getmetatable(t)
                 if k == "x" then
                     local oldX = t._x
                     t._x = (v == "left" or v == "center" or v == "right") and v
-                    self._layoutModified = (oldX ~= v)
+                    self._layoutModified = self._layoutModified or (oldX ~= v)
                 elseif k == "y" then
                     local oldY = t._y
                     t._y = (v == "up" or v == "center" or v == "down") and v
-                    self._layoutModified = (oldY ~= v)
+                    self._layoutModified = self._layoutModified or (oldY ~= v)
                 end
             end
         }
@@ -178,10 +178,10 @@ function UIWidget.new(style, flags)
                 local valP = UIWidget.getPercent(val)
 
                 if k == "x" then
-                    self._layoutModified = (valP ~= t._xP) or (val ~= t._x)
+                    self._layoutModified = self._layoutModified or (valP ~= t._xP) or (val ~= t._x)
                     t._xP, t._x = (valP and val), ((valP and floor(self._availAABB:width() * (valP / 100))) or val)
                 elseif k == "y" then
-                    self._layoutModified = (valP ~= t._yP) or (val ~= t._y)
+                    self._layoutModified = self._layoutModified or (valP ~= t._yP) or (val ~= t._y)
                     t._yP, t._y = (valP and val), ((valP and floor(self._availAABB:height() * (valP / 100))) or val)
                 end
             end,
@@ -219,7 +219,7 @@ function UIWidget.new(style, flags)
             _uR,
             _dP,
             __index = function(T, k)
-                t = getmetatable(T)
+                local t = getmetatable(T)
                 return (k == "left" and t._l) or (k == "right" and t._r) or (k == "up" and t._u) or
                     (k == "down" and t._d) or
                     (k == "x" and (t._l == t._r) and t._l) or
@@ -228,19 +228,19 @@ function UIWidget.new(style, flags)
                     (k == "value" and t._value)
             end,
             __newindex = function(T, k, val)
-                t = getmetatable(T)
+                local t = getmetatable(T)
                 local valP = UIWidget.getPercent(val)
                 if k == "left" then
-                    self._layoutModified = (valP ~= t._lP) or (val ~= t._l)
+                    self._layoutModified = self._layoutModified or (valP ~= t._lP) or (val ~= t._l)
                     t._lP, t._l = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
                 elseif k == "right" then
-                    self._layoutModified = (valP ~= t._rP) or (val ~= t._r)
+                    self._layoutModified = self._layoutModified or (valP ~= t._rP) or (val ~= t._r)
                     t._rP, t._r = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
                 elseif k == "up" then
-                    self._layoutModified = (valP ~= t._uP) or (val ~= t._u)
+                    self._layoutModified = self._layoutModified or (valP ~= t._uP) or (val ~= t._u)
                     t._uP, t._u = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
                 elseif k == "down" then
-                    self._layoutModified = (valP ~= t._dP) or (val ~= t._d)
+                    self._layoutModified = self._layoutModified or (valP ~= t._dP) or (val ~= t._d)
                     t._dP, t._d = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
                 elseif k == "x" then -- use previous
                     T.left = val
@@ -291,7 +291,8 @@ function UIWidget.new(style, flags)
     end -- updater of this widget
 
     self.style.z = style.z
-    self.style.allign = {x = style.allign.x, y = style.allign.y}
+    self.style.allign.x = style.allign.x
+    self.style.allign.y = style.allign.y
     self.style.origin.x = style.origin.x
     self.style.origin.y = style.origin.y
     self.style.size.x = style.size.x
@@ -515,7 +516,7 @@ end
 -- proxy function for setting avail AABB and triggering UI reload
 function UIWidget:setAvailAABB(x1, y1, x2, y2)
     self._availAABB:set(x1, y1, x2, y2)
-    self:reloadLayout()
+    self._layoutModified = true
 end
 
 -- sets visible AABB, doens't trigger reload, because effect is up to date during draw()
