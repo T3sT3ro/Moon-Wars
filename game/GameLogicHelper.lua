@@ -15,7 +15,7 @@ function GameLogicHelper.checkArgs(argsTypes, ...)
     local args = {...}
     for i=1, #argsTypes do
         if i > #args or type(args[i]) ~= argsTypes[i] then
-            print("type " .. i .. " is " .. type(args[i]) ", and should be: " .. argsTypes[i])
+            print("type " .. i .. " is " .. type(args[i]) .. ", and should be: " .. argsTypes[i])
             return false
         end
     end

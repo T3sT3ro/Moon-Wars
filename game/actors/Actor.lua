@@ -41,7 +41,11 @@ function Actor:setPos(x, y)
 end
 
 function Actor:debugInfo()
-    print("Actor info. Id: " .. self.id)
+    print("Actor info:")
+    for k, v in pairs(self) do
+        print(k .. ": " .. tostring(v))
+    end 
+    print("")
 end
 
 return Actor

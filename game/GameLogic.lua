@@ -20,8 +20,8 @@ function GameLogic.getCurUnit()
     return _curUnit
 end
 
-local function createActor(typeName, playerId, nameAsset)
-    local actor = Factory.create(typeName, playerId, nameAsset)
+local function createActor(typeName, playerId, name)
+    local actor = Factory.create(typeName, playerId, name)
     if _actors[actor.type] == nil then
         _actors[actor.type] = {}
     end
@@ -71,6 +71,8 @@ function GameLogic.init()
 
     for _, unit in ipairs(_actors["Unit"]) do
         table.insert(_unitsInOrder[unit.playerId], unit)
+        local startWeapon = Factory.create("Item", unit.playerId, "dagger")
+        unit:setStartWeapon(startWeapon)
     end
 
     _curPlayer = 1
@@ -205,7 +207,7 @@ local function pickup(name, x, y)
     end
 
     map.removeActor(item)
-    _curUnit:addToEq(item)
+    _curUnit:addItem(item)
     return true
 end
 helper.addAction("pickup", pickup, {"string", "number", "number"}, 0)

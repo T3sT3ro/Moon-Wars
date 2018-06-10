@@ -7,7 +7,7 @@ local Unit = Actor:new({type = "Unit", health = 100, movePenalty = 0, attack = 1
 local function itemPos(equipment, itemName)
     for i = 1, #equipment  do 
         if equipment[i].name == itemName then
-            return equipment[i]
+            return i
         end
     end
     return nil
@@ -57,6 +57,12 @@ function Unit:useItem(itemName)
     item:onUse(self)
 end
 
+function Unit:setStartWeapon(startWeapon)
+    print("setting: " .. startWeapon.name)
+    self:addItem(startWeapon)
+    self:useItem(startWeapon.name)
+end
+
 function Unit:die()
     for _, item in ipairs(self.equipment) do
         item:setPos(self.x, self.y)
@@ -80,7 +86,7 @@ function Unit:draw()
 end
 
 function Unit:debugInfo()
-    Actor.debugInfo(self) 
+    Actor.debugInfo(self)
 end
 
 return Unit

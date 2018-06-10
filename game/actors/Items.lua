@@ -1,18 +1,19 @@
 local function changeStat(...)
-    stats = {...}
+    local stats = {...}
     return 
     function(unit, args)
         local mult = 1
-        if args.unequip then
+        if args and args.unequip then
             mult = -1 * mult
         end
         for i = 1, #stats, 2 do
             local statName = stats[i]
             local changeValue = stats[i+1] 
             if not unit[statName] then
-                error("unit has not stat: " .. statName)
+                print("ERROR: unit has not stat: " .. statName)
+            else
+                unit[statName]  = unit[statName] + mult * changeValue      
             end
-            unit.statName  = unit.statName + mult * changeValue
         end
     end
 end

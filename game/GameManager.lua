@@ -37,7 +37,7 @@ end
 
 local function attackHandler()
     print("attack handler")
-    
+
     local curUnit = logic.getCurUnit()
     local dx = {1, -1, 0, 0}
     local dy = {0, 0, -1, 1}
@@ -48,11 +48,25 @@ local function attackHandler()
     end
 end
 
+local function pickupHandler()
+    print("pickup handler")
+    
+    local curUnit = logic.getCurUnit()
+    local dx = {1, -1, 0, 0}
+    local dy = {0, 0, -1, 1}
+    for i = 1, 4 do
+        local x = curUnit.x + dx[i]
+        local y = curUnit.y + dy[i]
+        logic.doAction("pickup", "dagger", x, y)
+    end
+end
+
 local _inputHandlers = 
 {
     wsad =  moveHandler,
     e = endTurnHandler,
-    q = attackHandler
+    q = attackHandler,
+    p = pickupHandler
 }
 
 function love.keypressed( key, isrepeat)
