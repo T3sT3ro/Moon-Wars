@@ -13,7 +13,13 @@ function GameManager.clear()
     map.clear()
 end
 
-local function handleInput()
+local _lastInput = 0.5
+local function handleInput(dt)
+    _lastInput = _lastInput + dt
+    if _lastInput < 0.5 then
+        return
+    end
+
     local dx, dy = 0, 0
     if love.keyboard.isDown('w') then
         print("w pressed")
@@ -30,17 +36,19 @@ local function handleInput()
     elseif love.keyboard.isDown('e') then
         print("handle end")
         logic.doAction("endTurn")
+        _lastInput = 0
     end
 
     local x = logic.getCurUnit().x
     local y = logic.getCurUnit().y
-    if dx ~= 0 or dy ~= 0 then 
+    if dx ~= 0 or dy ~= 0 then
+        _lastInput = 0 
         print("handle move: " .. tostring(logic.doAction("move", x + dx, y + dy)))
     end
 end
 
 function GameManager.update(dt)
-    handleInput()
+    handleInput(dt)
     map.update(dt)
 end
 
