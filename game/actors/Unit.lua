@@ -2,7 +2,12 @@ local Actor = require "game/actors/Actor"
 local map = require "game/GameMap"
 
 local Unit = Actor:new({type = "Unit", health = 100, movePenalty = 0, attack = 10, defense = 0, range = 1, 
-                        equipment = {}, equipedWeapon = nil, equipedArmor = nil, equipedArtifact = nil})
+                        equipment = nil, equipedWeapon = nil, equipedArmor = nil, equipedArtifact = nil})
+
+function Unit:init(playerId, config)
+    Actor.init(self, playerId, config)
+    self.equipment = {}
+end
 
 local function itemPos(equipment, itemName)
     for i = 1, #equipment  do 

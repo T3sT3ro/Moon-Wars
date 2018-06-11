@@ -1,9 +1,12 @@
 local Actor = require "game/actors/Actor"
-
+local Items = require "game/actors/Items"
 local Nexus = Actor:new({type = "Nexus", health = 200})
 
-function Nexus:craft(name, unit)
-
+function Nexus:tryCraft(name, unit)
+    -- check if unit has necessary materials
+    -- return false if no
+    -- use them and return true otherwise
+    return true
 end
 
 function Nexus:draw()

@@ -1,6 +1,8 @@
 local logic = require "game/GameLogic"
 local map = require "game/GameMap"
 local Unit = require "game/actors/Unit"
+local Items = require "game/actors/Items"
+
 local GameManager = {}
 
 function GameManager.init()
@@ -57,7 +59,9 @@ local function pickupHandler()
     for i = 1, 4 do
         local x = curUnit.x + dx[i]
         local y = curUnit.y + dy[i]
-        logic.doAction("pickup", "dagger", x, y)
+        for _, item in ipairs(Items) do
+            logic.doAction("pickup", item.name, x, y)
+        end
     end
 end
 

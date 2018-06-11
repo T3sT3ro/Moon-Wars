@@ -65,6 +65,15 @@ local function createInitActors(playerId)
     return initActors
 end
 
+local function startNewRound()
+    print("Starting new round")
+
+    for _, resource in ipairs(_actors["Resource"]) do
+        resource:produce(createActor)
+    end
+
+end
+
 function GameLogic.init()
     local initActors = { createInitNeutralActors(0), createInitActors(1), createInitActors(2) }
     map.addInitActors(initActors)
@@ -78,6 +87,8 @@ function GameLogic.init()
     _curPlayer = 1
     _curUnitIdx = {1, 1}
     _curUnit = _unitsInOrder[1][1]
+
+    startNewRound()
 end
 
 function GameLogic.clear()
@@ -97,10 +108,6 @@ function GameLogic.doAction(actionName, ...)
     return action.callback(...)
 end
 
-local function endRound()
-    print("Round has ended")
-end
-
 local function endGame(winnerId)
     print("Player " .. tostring(winnerId) .. " has won!")
     StateManager.load("MainMenuState")
@@ -109,9 +116,14 @@ end
 local function nextUnit(playerId)
     local curIdx = _curUnitIdx[playerId] + 1
     if curIdx > #_unitsInOrder[playerId] then
-        curIdx= 1
+        curIdx = 1
     end
     _curUnitIdx[playerId] = curIdx
+
+    if curIdx == 1 and playerId == 1 then
+        startNewRound()
+    end
+
     return _unitsInOrder[playerId][curIdx]
 end
 
@@ -189,7 +201,11 @@ local function craft(name)
         return false
     end
     
-    local item = nexus:craft(name, _curUnit)
+    local item = nil
+    if nexus:tryCraft(name, _curUnit) then
+        item = createActor("Item", _curUnit.playerId, name)
+    end
+
     if item == nil then
         return false
     end
@@ -208,6 +224,7 @@ local function pickup(name, x, y)
 
     map.removeActor(item)
     _curUnit:addItem(item)
+    print("picked up: " .. item.name)
     return true
 end
 helper.addAction("pickup", pickup, {"string", "number", "number"}, 0)

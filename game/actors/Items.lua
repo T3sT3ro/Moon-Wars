@@ -89,6 +89,20 @@ local Items =
         toCraft = nil -- can not be crafted
     },
 
+    {
+        name = "wood",
+        itemType = "material"
+    },
+
+    {
+        name = "stone",
+        itemType = "material"
+    },
+
+    {
+        name = "crystal",
+        itemType = "material"
+    }
 }
 
 return Items
