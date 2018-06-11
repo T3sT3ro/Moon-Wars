@@ -3,9 +3,9 @@ package.loaded[...] = UI
 
 local min, max = math.min, math.max
 
-Typeassert = require "utils/Typeassert"
-AABB = require "UI/AABB"
-Color = require "UI/Color"
+local Typeassert = require "utils/Typeassert"
+local AABB = require "UI/AABB"
+local Color = require "UI/Color"
 
 UI.__index = UI
 
@@ -31,6 +31,9 @@ function UI:nextID(...)
     return UI.UUIDseed
 end
 
+-- fields:
+--- _ID, _index, _widget, _hoveredWidget, _focusedWidget, _clickBegin, _clickEnd
+---  origin, size, cursor
 function UI.new(x, y, width, height)
     local naturalPred = function(x)
         return type(x) == "number" and x >= 0
@@ -65,7 +68,6 @@ function UI:setWidget(widget)
 end
 
 function UI:update(dt, ...)
-    self._widget:update(dt, ...)
     local hovered = self._widget:getHovered()
     if hovered ~= self._hoveredWidget then -- won't trigger while same widget is hovered or no widget is hovered
         if self._hoveredWidget and not self._hoveredWidget.flags.passThru then
@@ -76,6 +78,7 @@ function UI:update(dt, ...)
         end
     end
     self._hoveredWidget = hovered
+    self._widget:update(dt, ...)
 end
 
 function UI:draw(...)
@@ -88,6 +91,7 @@ function UI:draw(...)
         oldSetScissorFun(self.origin.x, self.origin.y, self.size.x, self.size.y)
         return x and y and w and h and love.graphics.intersectScissor(x, y, w, h)
     end
+    self:setRawCursor(self.origin.x, self.origin.y)
     self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
     love.graphics.setScissor(old[1], old[2], old[3], old[4])
@@ -152,6 +156,16 @@ function UI:height()
     return self.size.y
 end
 
+-- returns widget over which the mouse was pressed
+function UI:getClickBegin() 
+    return self._clickBegin.widget
+end
+
+-- returns widget over which the mouse was released. Available in mouseReleased events
+function UI:getClickEnd() 
+    return self._clickEnd.widget
+end
+
 -- returns mouse relative to UI
 function UI:getRelativeMouse()
     local mx, my = love.mouse.getX(), love.mouse.getY()
@@ -184,7 +198,7 @@ end
 
 --============EVENTS============--
 
-local function mouseClickedEvt(ui, x, y, button)
+local function mousePressedEvt(ui, x, y, button)
     local widget = ui:getWidgetAt(x, y, true)
     if widget then
         if widget ~= ui._focusedWidget then
@@ -192,7 +206,7 @@ local function mouseClickedEvt(ui, x, y, button)
                 ui._focusedWidget:dropFocus()
             end
         end
-        widget:mouseClicked(x, y, button)
+        widget:mousePressed(x, y, button)
     elseif ui._focusedWidget then -- outside of any widget
         ui._focusedWidget:dropFocus()
     end
@@ -263,7 +277,7 @@ function UI:getEventHandlers()
     local events = {}
     ----
     events.mousepressed = function(x, y, button)
-        mouseClickedEvt(self, x, y, button)
+        mousePressedEvt(self, x, y, button)
     end
     events.mousereleased = function(x, y, button)
         mouseReleasedEvt(self, x, y, button)

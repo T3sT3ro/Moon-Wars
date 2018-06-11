@@ -41,19 +41,14 @@ local UDB =
 )
 
 UDB.init()
-UDB.update(7)
+UDB.update(5)
 UDB.draw()
-love.keyboard["a"] = true
-love.keyboard["r"] = true
-love.keyboard["i"] = true
-love.keyboard["c"] = true
-love.keyboard["1"] = true
+love.mouse.x, love.mouse.y = 488, 318
+love.keyboard["left"] = true
 
-love.mouse.x, love.mouse.y = 350, 280
-UDB.update()
+UDB.update(5)
 UDB.draw()
-love.mouse.x, love.mouse.y = 500, 300
-UDB.update()
+UDB.update(5)
 UDB.draw()
 
 UDB.update()

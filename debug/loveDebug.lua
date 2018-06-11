@@ -28,6 +28,15 @@ function love.graphics.print(...)
 end
 function love.graphics.newImage(...)
     print("love.graphics.newImage():", ...)
+    return {        getWidth = function(self)
+        print("text:getWidth()")
+        return 30
+    end,
+    getHeight = function(self)
+        print("text:getHeight()")
+        return 10
+    end,
+    typeOf = function(self, t) return t == "Image" end}
 end
 function love.graphics.newFont(...)
     print("love.graphics.newFont():", ...)
@@ -43,7 +52,8 @@ function love.graphics.newText(...)
         getHeight = function(self)
             print("text:getHeight()")
             return 10
-        end
+        end,
+        typeOf = function(self, t) return t == "Text" end
     }
 end
 function love.graphics.setScissor(x, y, w, h)

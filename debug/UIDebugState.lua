@@ -2,26 +2,10 @@ local UIDebugState = {name = "UIDebugState"}
 
 local UI = require "UI/UI"
 local UIWidget = require "UI/UIWidget"
+local UIFrame = require "UI/UIFrame"
+local UIButton = require "UI/UIButton"
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
-
-local stateDesc
-local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
-local margin = 30
-local GUI = UI(margin, margin, w_width - 2 * margin, w_height - 2 * margin)
-local f0 = UIWidget({size = {x = "50%", y = "50%"}, margin = {all = 30}})
-local f1 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
-local f2 = UIWidget({allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
-local f3 = UIWidget({allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
-local f4 = UIWidget({size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
-local f5 = UIWidget({origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
-
-GUI:setWidget(f0)
-f0:addWidget(f1)
-f1:addWidget(f2)
-f1:addWidget(f3)
-f3:addWidget(f4)
-f4:addWidget(f5)
 
 local blueish = Color("#5050ffa0")
 local redish = Color("#ff5050a0")
@@ -30,10 +14,49 @@ local whiteish = Color("#ffffffa0")
 local white = Color("#ffffff")
 local red = Color("#ff1b2b")
 local click = {start = nil, stop = nil}
-local font = nil
+ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
+font = ResourceManager.get("font.monospace24")
+
+local stateDesc
+local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
+local margin = 30
+local GUI = UI(margin, margin, w_width - 2 * margin, w_height - 2 * margin)
+local mainframe = UIFrame({allign = {x = "left"}})
+local side = UIFrame({size = {x = "20%"}, allign = {x = "right"}, displayMode = "bf"})
+local body = UIFrame({size = {x = "80%"}, allign = {x = "left"}})
+local f0 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
+local f1 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
+local f2 = UIWidget({allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
+local f3 = UIWidget({allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
+local f4 = UIWidget({size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
+local f5 = UIWidget({origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
+local TEXT_1 = love.graphics.newText(font, "BBTN")
+local bttn =
+    UIButton(
+    {margin = {x = 15}, size = {x = '80%', y = TEXT_1:getHeight()}, allign = {x = "center"}},
+    "normal",
+    TEXT_1,
+    function()
+        print "CLICKED"
+    end
+)
+bttn.buttonHeld = function(self, delta)
+    print("HELD for "..delta)
+end
+
+GUI:setWidget(mainframe)
+mainframe:addWidget(body)
+mainframe:addWidget(side)
+body:addWidget(f0)
+f0:addWidget(f1)
+f1:addWidget(f2)
+f1:addWidget(f3)
+f3:addWidget(f4)
+f4:addWidget(f5)
+
+side:addWidget(bttn)
 
 local widgetRenderer = function(self)
-    self:setCursor(0, 0)
     local original = {love.graphics.getColor()}
     if self:isFocused() then
         love.graphics.setColor(self.style.theme.fg_focus:normalized())
@@ -98,7 +121,7 @@ end
 for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
     v.mouseEntered = _EVTme
     v.mouseExited = _EVTmx
-    v.mouseClicked = _EVTmc
+    v.mousePressed = _EVTmc
     v.mouseReleased = _EVTmr
     v.wheelMoved = _EVTwm
     v.keyPressed = _EVTkp
@@ -123,17 +146,18 @@ end
 
 f5.updater = function(self, dt)
     if self:isHovered() then
+        local delta = 1
         if love.keyboard.isDown("left") then
-            self.style.origin.x = self.style.origin.x - 1
-        end 
+            self.style.origin.x = self.style.origin.x - delta
+        end
         if love.keyboard.isDown("right") then
-            self.style.origin.x = self.style.origin.x + 1
-        end 
+            self.style.origin.x = self.style.origin.x + delta
+        end
         if love.keyboard.isDown("up") then
-            self.style.origin.y = self.style.origin.y - 1
+            self.style.origin.y = self.style.origin.y - delta
         end
         if love.keyboard.isDown("down") then
-            self.style.origin.y = self.style.origin.y + 1
+            self.style.origin.y = self.style.origin.y + delta
         end
     end
 end
@@ -159,9 +183,6 @@ function UIDebugState.init()
     love.textinput = handlers.textinput
     love.filedropped = handlers.filedropped
     love.directorydropped = handlers.directorydropped
-
-    ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
-    font = ResourceManager.get("font.monospace24")
     stateDesc = stateDesc or love.graphics.newText(font, "UI_DEBUG_STATE")
     click.start, click.stop = nil, nil
     w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()

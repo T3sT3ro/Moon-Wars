@@ -13,12 +13,13 @@ UIWidget.__index = UIWidget
 --- % values are relative to available space + widgets's layout policy
 
 function UIWidget.isUIWidget(o)
+    -- for object get metatable, for class it's superclass by __index
     local mt = getmetatable(o)
     while mt ~= UIWidget do
         if mt == nil then
             return false
         end
-        mt = getmetatable(mt)
+        mt = getmetatable(mt) or (mt.__index ~= mt and mt.__index)
     end
     return true
 end
@@ -222,9 +223,8 @@ function UIWidget.new(style, flags)
                 local t = getmetatable(T)
                 return (k == "left" and t._l) or (k == "right" and t._r) or (k == "up" and t._u) or
                     (k == "down" and t._d) or
-                    (k == "x" and (t._l == t._r) and t._l) or
-                    (k == "y" and (t._u == t._d) and t._u) or
-                    (k == "all" and (t._u == t._d and t._l == t._r and t._l == t._u) and t._u) or
+                    (k == "x" and (t._l + t._r)) or
+                    (k == "y" and (t._u + t._d)) or
                     (k == "value" and t._value)
             end,
             __newindex = function(T, k, val)
@@ -271,13 +271,13 @@ function UIWidget.new(style, flags)
         {
             __index = function(t, k) -- returns value from _
                 local code = ({bg = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5})[k]
-                return (code and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
+                return (code and self._UI and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
             end
         }
     )
 
     self.__index = UI
-    self._UI = null
+    self._UI = nil
     self._ID = UIWidget.nextID() -- might be obsolete, because objects self identifies itself by unique table
     self._childrenByZ = {}
     self._parent = self -- stand-alone widgets shouldn't exist
@@ -285,10 +285,6 @@ function UIWidget.new(style, flags)
     self._availAABB = AABB(0, 0, 0, 0) -- virtual space the widget draw onto
     self._AABB = AABB(0, 0, 0, 0) -- requested AABB according to availAABB [- parent.margins]
     self._layoutModified = true
-    self.renderer = function(self, ...)
-    end -- renderer of this widget
-    self.updater = function(self, ...)
-    end -- updater of this widget
 
     self.style.z = style.z
     self.style.allign.x = style.allign.x
@@ -316,14 +312,22 @@ function UIWidget.new(style, flags)
     return self
 end
 
+-- to override
+function UIWidget:updater()
+end
+
 function UIWidget:update(...) -- TODO: status passed during tree traversal (anyHovered flag)
     if not self.flags.hidden then -- don't waste resources for hidden objects
-        self:reloadLayout(self._layoutModified) -- handles size, origin, margin changes (later also drag and scroll?)
         self:updater(...)
+        self:reloadLayout(self._layoutModified) -- handles size, origin, margin changes (later also drag and scroll?)
         for _, v in ipairs(self._childrenByZ) do
             v:update(...)
         end
     end
+end
+
+-- to override
+function UIWidget:renderer()
 end
 
 -- guarantee: elements are setup properly
@@ -336,6 +340,7 @@ function UIWidget:draw(...)
         for _, v in ipairs(self._childrenByZ) do
             -- TODO: allow overflow flag implementation as set scissors to parent
             love.graphics.setScissor(v._visibleAvailAABB:cut(v._AABB):normalized())
+            v:setCursor(0,0)
             v:draw(...)
         end
     end
@@ -358,50 +363,49 @@ function UIWidget:getHovered()
 end
 
 -- to override
-function UIWidget:reloadLayoutSelf()
+local function reloadLayoutSelf(self)
+    -- assigning has sideeffect of recalculating exact sizes
+    self.style.origin.x = self.style.origin:value("x")
+    self.style.origin.y = self.style.origin:value("y")
+    self.style.size.x = self.style.size:value("x")
+    self.style.size.y = self.style.size:value("y")
+    self.style.margin.left = self.style.margin:value("left")
+    self.style.margin.right = self.style.margin:value("right")
+    self.style.margin.up = self.style.margin:value("up")
+    self.style.margin.down = self.style.margin:value("down")
+    --FIXME: thorough testing
+
+    -- self AABB relative to availAABB and allign
+    local x1 = self._availAABB[1].x
+    local y1 = self._availAABB[1].y
+    local x2 = x1 + self.style.size.x
+    local y2 = y1 + self.style.size.y
+    if self.style.allign.x == "center" then
+        local dx = floor((self._availAABB:width() - self.style.size.x) / 2)
+        x1, x2 = x1 + dx, x2 + dx
+    elseif self.style.allign.x == "right" then
+        local dx = self._availAABB:width() - self.style.size.x
+        x1, x2 = x1 + dx, x2 + dx
+    end
+    if self.style.allign.y == "center" then
+        local dy = floor((self._availAABB:height() - self.style.size.y) / 2)
+        y1, y2 = y1 + dy, y2 + dy
+    elseif self.style.allign.y == "down" then
+        local dy = self._availAABB:height() - self.style.size.y
+        y1, y2 = y1 + dy, y2 + dy
+    end
+    self._AABB:set(
+        x1 + self.style.origin.x,
+        y1 + self.style.origin.y,
+        x2 + self.style.origin.x,
+        y2 + self.style.origin.y
+    )
 end
 
 -- guarantee: availAABB and visibleAvailAABB set properly
 function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was updated
     if not self.flags.hidden and doReload or self._layoutModified then -- resources save on hidden objects
-        -- assigning has sideeffect of recalculating exact sizes
-        self.style.origin.x = self.style.origin:value("x")
-        self.style.origin.y = self.style.origin:value("y")
-        self.style.size.x = self.style.size:value("x")
-        self.style.size.y = self.style.size:value("y")
-        self.style.margin.left = self.style.margin:value("left")
-        self.style.margin.right = self.style.margin:value("right")
-        self.style.margin.up = self.style.margin:value("up")
-        self.style.margin.down = self.style.margin:value("down")
-        --FIXME: thorough testing
-
-        -- self AABB relative to availAABB and allign
-        local x1 = self._availAABB[1].x
-        local y1 = self._availAABB[1].y
-        local x2 = x1 + self.style.size.x
-        local y2 = y1 + self.style.size.y
-        if self.style.allign.x == "center" then
-            local dx = floor((self._availAABB:width() - self.style.size.x) / 2)
-            x1, x2 = x1 + dx, x2 + dx
-        elseif self.style.allign.x == "right" then
-            local dx = self._availAABB:width() - self.style.size.x
-            x1, x2 = x1 + dx, x2 + dx
-        end
-        if self.style.allign.y == "center" then
-            local dy = floor((self._availAABB:height() - self.style.size.y) / 2)
-            y1, y2 = y1 + dy, y2 + dy
-        elseif self.style.allign.y == "down" then
-            local dy = self._availAABB:height() - self.style.size.y
-            y1, y2 = y1 + dy, y2 + dy
-        end
-        self._AABB:set(
-            x1 + self.style.origin.x,
-            y1 + self.style.origin.y,
-            x2 + self.style.origin.x,
-            y2 + self.style.origin.y
-        )
-
-        self:reloadLayoutSelf()
+        reloadLayoutSelf(self)
         -- z-index children sort
         table.sort(
             self._childrenByZ,
@@ -431,17 +435,13 @@ function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was u
     end
 end
 
--- to override
-function UIWidget:reloadSelf(...)
-end
 -- drops focus, reset scroll, clear buffers etc.
 --- quarantee - availAABB is always set properly
 function UIWidget:reload(...)
     self._hovered = false
+    self._UI = self._parent._UI
     self:dropFocus()
-    self:reloadSelf()
     self:reloadLayout(true)
-
     for _, v in ipairs(self._childrenByZ) do
         v:reload(...)
     end
@@ -453,19 +453,33 @@ function UIWidget:addWidget(widget)
     widget._parent:removeWidget(widget)
     widget._parent = self
     widget._UI = self._UI
-    self:reloadLayout(true)
+    self:reload(true)
 end
 
 -- remove widget from tree
 function UIWidget:removeWidget(widget)
+    local iter = nil
     for k, v in ipairs(self._childrenByZ) do
         if v == widget then
-            widget = k
+            iter = k
             break
         end
     end
-    table.remove(self._childrenByZ, k)
-    self:reloadLayout(true)
+    if iter then
+        table.remove(self._childrenByZ, iter)
+        self:reloadLayout(true)
+    end
+end
+
+--* syntactic sugar for self.style.size.x = x ...
+function UIWidget:resize(width, height)
+    self.style.size.x = width or self.style.size.y
+    self.style.size.y = height or self.style.size.y
+end
+
+-- getter for UI
+function UIWidget:getUI()
+    return self._UI
 end
 
 -- copy of requested AABB
@@ -492,25 +506,43 @@ function UIWidget:getOrigin()
     return {x = self.style.origin.x, y = self.style.origin.y}
 end
 
+--* syntactic sugar
+function UIWidget:getHeight()
+    return self.style.size.y
+end
+
+--* syntactic sugar
+function UIWidget:getWidth()
+    return self.style.size.x
+end
+
 -- cursor relative to self
 function UIWidget:getCursor()
-    local cx, cy = self._UI:getRawCursor()
-    return cx - self._AABB[1].x, cy - self._AABB[1].y
+    if self._UI then
+        local cx, cy = self._UI:getRawCursor()
+        return cx - self._AABB[1].x, cy - self._AABB[1].y
+    else
+        return nil
+    end
 end
 
 -- proxy to parent
 function UIWidget:getRawCursor()
-    return self._UI:getRawCursor()
+    if self._UI then
+        return self._UI:getRawCursor()
+    else
+        return nil
+    end
 end
 
 -- proxy to parent
 function UIWidget:setRawCursor(x, y)
-    self._UI:setRawCursor(x, y)
+    return self._UI and self._UI:setRawCursor(x, y)
 end
 
 -- sets cursor relative to this elements requested AABB corner
 function UIWidget:setCursor(x, y)
-    self._UI:setRawCursor(self._AABB[1].x + x, self._AABB[1].y + y)
+    return self._UI and self._UI:setRawCursor(self._AABB[1].x + x, self._AABB[1].y + y)
 end
 
 -- proxy function for setting avail AABB and triggering UI reload
@@ -525,17 +557,17 @@ function UIWidget:setVisibleAvailAABB(x1, y1, x2, y2)
 end
 
 function UIWidget:isFocused()
-    return self._UI._focusedWidget == self
+    return self._UI and self._UI._focusedWidget == self
 end
 
 function UIWidget:dropFocus()
-    if self._UI._focusedWidget == self then
+    if self._UI and self._UI._focusedWidget == self then
         self._UI._focusedWidget = nil
     end
 end
 
 function UIWidget:requestFocus()
-    return self._UI:requestFocus(self)
+    return self._UI and self._UI:requestFocus(self)
 end
 
 -- called by other elements to drop the focus - true if focus drop was a success, false otherwise
@@ -552,7 +584,7 @@ end
 
 -- true if this item is hovered (and none of direct subitems with passThru=false is hovered)
 function UIWidget:isHovered()
-    return self._UI._hoveredWidget == self
+    return self._UI and self._UI._hoveredWidget == self
 end
 
 -- returns widget containing x, y in it's realAABB and if solid=true, return widgets with passThru=false FIXME:test
@@ -612,7 +644,7 @@ function UIWidget:mouseExited()
 end
 
 -- whenever mouse was clicked on given object
-function UIWidget:mouseClicked(x, y, button)
+function UIWidget:mousePressed(x, y, button)
 end
 
 -- whenever mouse was released on given object
