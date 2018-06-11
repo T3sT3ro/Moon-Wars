@@ -92,6 +92,10 @@ end
 
 function Unit:debugInfo()
     Actor.debugInfo(self)
+    print("equipment:")
+    for _, item in ipairs(self.equipment) do
+        print(item.name)
+    end
 end
 
 return Unit

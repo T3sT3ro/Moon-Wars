@@ -65,12 +65,23 @@ local function pickupHandler()
     end
 end
 
+local function craftHandler()
+    print("craft handler")
+    logic.doAction("craft", "dagger")
+end
+
+local function infoHandler()
+    logic.getCurUnit():debugInfo()
+end
+
 local _inputHandlers = 
 {
     wsad =  moveHandler,
     e = endTurnHandler,
     q = attackHandler,
-    p = pickupHandler
+    p = pickupHandler,
+    c = craftHandler,
+    i = infoHandler
 }
 
 function love.keypressed( key, isrepeat)

@@ -21,7 +21,7 @@ end
 local function craftMat(...)
     local args = {...}
     local materials = {}
-    for i = 1, #args do
+    for i = 1, #args, 2 do
         materials[#materials + 1] = {args[i], args[i+1]}
     end
     return materials
