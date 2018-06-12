@@ -84,13 +84,15 @@ local _inputHandlers =
     i = infoHandler
 }
 
-function love.keypressed( key, isrepeat)
+--[[
+    function love.keypressed( key, isrepeat)
     for keys, handler in pairs(_inputHandlers) do
         if keys:find(key) ~= nil then
             handler(key)
         end
     end
-end    
+end
+]]--    
 
 function GameManager.update(dt)
     map.update(dt)
