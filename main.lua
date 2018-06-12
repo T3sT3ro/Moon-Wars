@@ -1,8 +1,17 @@
+<<<<<<< HEAD
 local ResourceManager = require "ResourceManager"
 local StateManager = require "StateManager"
 local MainMenuState = require "states/MainMenuState"
 local GameSetupState = require "states/GameSetupState"
 local GameState = require "states/GameState"
+=======
+ResourceManager = require "ResourceManager"
+StateManager = require "StateManager"
+MainMenuState = require "states/MainMenuState"
+GameSetupState = require "states/GameSetupState"
+GameState = require "states/GameState"
+UIDebugState = require "debug/UIDebugState"
+>>>>>>> feature/UI
 
 function love.load()
     ResourceManager.init("resources")
@@ -10,8 +19,21 @@ function love.load()
     StateManager.add(MainMenuState)
     StateManager.add(GameSetupState)
     StateManager.add(GameState)
-    
-    StateManager.load("GameState")
+    StateManager.add(UIDebugState)
+
+    love.keyboard.setTextInput(false)
+    love.keyboard.setKeyRepeat(true)
+    love.window.setMode(
+        800, 600,
+        {
+            msaa = 16,
+            fullscreen = false,
+            resizable = true,
+            fullscreentype = "desktop"
+        }
+    )
+
+    StateManager.load(MainMenuState.name)
 end
 
 function love.update(dt)
