@@ -82,6 +82,7 @@ function UI:update(dt, ...)
 end
 
 function UI:draw(...)
+    love.graphics.push("all")
     local old = {love.graphics.getScissor()}
     love.graphics.setScissor(self.origin.x, self.origin.y, self.size.x, self.size.y)
     local oldSetScissorFun = love.graphics.setScissor
@@ -95,6 +96,7 @@ function UI:draw(...)
     self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
     love.graphics.setScissor(old[1], old[2], old[3], old[4])
+    love.graphics.pop()
 end
 
 function UI:reload()

@@ -98,8 +98,31 @@ function GameManager.update(dt)
     map.update(dt)
 end
 
-function GameManager.draw()
-    map.draw()
+function GameManager.draw(self,offset)
+    map.draw(32-offset)
+end
+
+local function pressed(x,y,button)
+    local hp_thing = map.getActorByStat(x,y,"health")
+    if button == 1 then logic.doAction("move",x,y)
+    elseif hp_thing ~= nil then 
+        if hp_thing ==logic.getCurUnit() then logic.doAction("drop", "wood")
+        elseif hp_thing.type == "Nexus" then 
+            if hp_thing.playerId == logic.getCurUnit().playerId then logic.doAction("craft", "dagger")
+            else logic.doAction("attack",x,y) 
+            end
+        else logic.doAction("attack",x,y)
+        end
+    elseif map.getActorByType(x,y,"Resource") ~= nil then 
+        for _, item in ipairs(Items) do
+            logic.doAction("pickup", item.name, x, y)
+        end
+    else logic.doAction("endTurn") end
+end
+
+function GameManager.mousePressed(self,x, y, button)
+    local Ox,Oy = self:getOrigin()
+    pressed(math.floor((x-Ox)/32)+1,math.floor((y-Oy)/32)+1,button)
 end
 
 return GameManager

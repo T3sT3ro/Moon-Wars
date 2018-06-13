@@ -60,7 +60,7 @@ local function createInitActors(playerId)
     addInitActor(initActors, 4, "Unit", playerId, "unit")
     addInitActor(initActors, 3, "Resource", playerId, "tree")
     addInitActor(initActors, 2, "Resource", playerId, "rock")
-    --addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
+    addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
 
     return initActors
 end

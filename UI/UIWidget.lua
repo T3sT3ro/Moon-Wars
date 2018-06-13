@@ -503,7 +503,7 @@ end
 
 -- copy of origin
 function UIWidget:getOrigin()
-    return {x = self.style.origin.x, y = self.style.origin.y}
+    return self.style.origin.x,self.style.origin.y
 end
 
 --* syntactic sugar

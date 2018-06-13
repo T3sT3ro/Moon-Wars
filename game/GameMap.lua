@@ -11,7 +11,7 @@ local res = {}
 res[1] = {}
 res[2] = {}
 
-local mapType = {"grass","stone","water"}
+local mapType = {"grass","stone_tile","water"}
 --[[
     map types:
     1 - grass
@@ -52,7 +52,7 @@ local function check()
         if y > 1 and map[x][y-1].type == 1 then dfs(x,y-1) end
     end
     dfs(nex.x,nex.y)
-    if --[[tree == 3 and --[[rock == 2 and crystal == 1 and]] pass then return true end
+    if --[[tree == 3 and --[[rock == 2 and mine == 1 and]] pass then return true end
     return false
 end
 
@@ -79,8 +79,10 @@ function GameMap.init()
         nex.x,nex.y = 6,5
         res[1].tree = {{x = 1, y = 1},{x = 2 , y = 15},{x = 9, y = 11}}
         res[1].rock = {{x = 6, y = 8},{x = 3 ,y = 14}}
+        res[1].mine = {x = 2 , y = 10}
         res[2].tree = {}
         res[2].rock = {}
+        res[2].mine = {}
         for i=1, 3 do
             res[2].tree[i] = {}
             res[2].tree[i].x,res[2].tree[i].y = 21 -res[1].tree[i].x,21 - res[1].tree[i].y
@@ -89,10 +91,12 @@ function GameMap.init()
             res[2].rock[i] = {}
             res[2].rock[i].x,res[2].rock[i].y = 21 -res[1].rock[i].x,21 - res[1].rock[i].y
         end
+        res[2].mine.x,res[2].mine.y = 21 -res[1].mine.x,21 - res[1].mine.y
         --]]
+    --[[
     if check() == false then 
         error("Wrong map generated")
-    end
+    end]]
 end
 
 local function addActTable(tab)
@@ -128,6 +132,8 @@ local function setAct(player,tab)
             elseif actor.resType == "rock" then
                 actor.x,actor.y = res[player].rock[rocks].x,res[player].rock[rocks].y
                 rocks = rocks + 1
+            elseif actor.resType == "mine" then
+                actor.x,actor.y = res[player].mine.x,res[player].mine.y
             end
         end
     end
@@ -152,19 +158,26 @@ function GameMap.update(dt)
     
 end
 
-function GameMap.draw()
+function GameMap.draw(offset)
+    --love.graphics.setColor(1,1,1,1)
     for i=1,20 do
         for j=1,20 do
-            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32, j*32,0,0.5,0.5)
+            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32 - offset, j*32-offset,0,0.5,0.5)
             for _,v in pairs(map[i][j].actors) do
-                v:draw()
+                if v.type ~= "Unit" and v.type ~= "Item" then v:draw(offset) break end
+            end
+            for _,v in pairs(map[i][j].actors) do
+                if v.type == "Item" then v:draw(offset) end
+            end
+            for _,v in pairs(map[i][j].actors) do
+                if v.type == "Unit" then v:draw(offset) break end
             end
         end
     end
 end
 
 function GameMap.distance(x1, y1, x2, y2)
-    return abs((x1-x2)+(y1-y2))
+    return abs((x1-x2))+abs((y1-y2))
 end
 
 function GameMap.isMoveable(x, y)
@@ -175,6 +188,11 @@ function GameMap.isMoveable(x, y)
     end
     return true
 end
+
+function GameMap.mousePressed(x,y,button)
+    
+end
+
 
 function GameMap.removeActor(actor)
     map[actor.x][actor.y].actors[actor.id] = nil
@@ -195,6 +213,7 @@ function GameMap.getActorByStat(x, y, statName)
 end
 
 function GameMap.getActorByName(x, y, actorName)
+    if map[x] == nil or map[x][y] == nil then return nil end
     for _, actor in pairs(map[x][y].actors) do
         if actor.name == actorName then
             return actor
@@ -203,4 +222,13 @@ function GameMap.getActorByName(x, y, actorName)
     return nil
 end
 
+function GameMap.getActorByType(x, y, actorType)
+    if map[x] == nil or map[x][y] == nil then return nil end
+    for _, actor in pairs(map[x][y].actors) do
+        if actor.type == actorType then
+            return actor
+        end
+    end
+    return nil
+end
 return GameMap
