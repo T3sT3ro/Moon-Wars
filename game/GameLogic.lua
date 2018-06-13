@@ -93,7 +93,7 @@ end
 
 function GameLogic.clear()
     _actors = {}
-    _unitsOrder = {{},{}}
+    _unitsInOrder = {{},{}}
     _curUnit = nil
 end
 

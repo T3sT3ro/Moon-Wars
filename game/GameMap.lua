@@ -174,6 +174,10 @@ end
 
 function GameMap.clear()
     map = {}
+    nex = {}
+    res = {}
+    res[1] = {}
+    res[2] = {}
 end
 
 function GameMap.update(dt)
