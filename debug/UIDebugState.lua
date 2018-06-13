@@ -30,18 +30,18 @@ local f2 = UIWidget({allign = {x = "left", y = "up"}, size = {x = "50%", y = "80
 local f3 = UIWidget({allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
 local f4 = UIWidget({size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
 local f5 = UIWidget({origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
-local TEXT_1 = love.graphics.newText(font, "BBTN")
+local TEXT_1 = love.graphics.newText(font, "BTTN")
 local bttn =
     UIButton(
-    {margin = {x = 15}, size = {x = '80%', y = TEXT_1:getHeight()}, allign = {x = "center"}},
     "normal",
+    {margin = {x = 15}, size = {x = "80%", y = TEXT_1:getHeight()}, allign = {x = "center"}},
     TEXT_1,
     function()
         print "CLICKED"
     end
 )
 bttn.buttonHeld = function(self, delta)
-    print("HELD for "..delta)
+    print("HELD for " .. delta)
 end
 
 GUI:setWidget(mainframe)

@@ -1,4 +1,5 @@
 local UIButton = {}
+package.loaded[...] = UIButton
 
 local UIWidget = require "UI/UIWidget"
 local UIFrame = require "UI/UIFrame"
@@ -6,27 +7,23 @@ local Typeassert = require "utils/Typeassert"
 local min, max = math.min, math.max
 
 UIButton.__index = UIButton
+
 function UIButton.isButton(o)
-    local mt = getmetatable(o)
-    while mt ~= UIFrame do
-        if mt == nil then
-            return false
-        end
-        mt = getmetatable(mt) or (mt.__index ~= mt and mt.__index)
-    end
-    return true
+    return UIWidget.isA(o, UIButton)
 end
 
 -- default:
----- style.*
+---- UIWidget.style.*
+---- UIWidget.flags.*
 -- extra:
----- style.contentAllign = {x='left|center|right', y='up|center|down'}
----- flags.enable = [true|false] - button behaves like checkbox
+---- style.contentAllign = {[x='left|center|right'], [y='up|center|down']}
+---- flags.enable = true iff type=='checkbox'
+---- callback = function triggered when button clicked
 
-function UIButton.new(style, type, content, callback)
+function UIButton.new(type, style, content, callback)
+    Typeassert({type, style, callback}, {{"ANY", "nil", "R:checkbox", "R:normal"}, "nil|table", "nil|function"})
     style = style or {}
     local self = UIWidget(style)
-    Typeassert({type, callback},{{"ANY", "nil", "R:checkbox", "R:normal"}, "nil|function"})
     self.flags.enable = type == "checkbox"
     self.clickDuration = 0
     self.pressed = false -- pressed and held
@@ -44,6 +41,7 @@ local function contentPred(o)
     return o == nil or (o.typeOf and (o:typeOf("Image") or o:typeOf("Text")))
 end
 
+-- used to change the content of a button. content can be love Text od love Image for now
 function UIButton:setContent(content, contentAllign)
     Typeassert(
         {content, contentAllign},

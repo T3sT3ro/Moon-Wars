@@ -82,6 +82,7 @@ function UI:update(dt, ...)
 end
 
 function UI:draw(...)
+    love.graphics.push("all")
     local old = {love.graphics.getScissor()}
     love.graphics.setScissor(self.origin.x, self.origin.y, self.size.x, self.size.y)
     local oldSetScissorFun = love.graphics.setScissor
@@ -95,6 +96,7 @@ function UI:draw(...)
     self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
     love.graphics.setScissor(old[1], old[2], old[3], old[4])
+    love.graphics.pop()
 end
 
 function UI:reload()
@@ -114,11 +116,15 @@ function UI:resize(x, y, width, height)
     self.origin.x, self.origin.y = x, y
     self.size.x, self.size.y = max(0, width), max(0, height)
     if self._widget then
-        self._widget:setAvailAABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
+        self._widget:setAvailAABB(
+            self.origin.x,
+            self.origin.y,
+            self.origin.x + self.size.x,
+            self.origin.y + self.size.y
+        )
         self._widget:setVisibleAvailAABB(self._widget._availAABB)
         self._widget:reloadLayout()
     end
-    
 end
 
 -- true if gained focus, false otherwise
@@ -157,12 +163,12 @@ function UI:height()
 end
 
 -- returns widget over which the mouse was pressed
-function UI:getClickBegin() 
+function UI:getClickBegin()
     return self._clickBegin.widget
 end
 
 -- returns widget over which the mouse was released. Available in mouseReleased events
-function UI:getClickEnd() 
+function UI:getClickEnd()
     return self._clickEnd.widget
 end
 
@@ -175,7 +181,7 @@ function UI:getRelativeMouse()
 end
 
 function UI:getRawCursor()
-    return self.cursor.x,self.cursor.y
+    return self.cursor.x, self.cursor.y
 end
 
 function UI:setRawCursor(x, y)

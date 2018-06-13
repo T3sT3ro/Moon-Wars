@@ -5,6 +5,11 @@ local UI = require "UI/UI"
 local Typeassert = require "utils/Typeassert"
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
+
+local UIFrame = require "UI/UIFrame"
+local UIButton = require "UI/UIButton"
+local UIGrid = require "UI/UIGrid"
+
 local floor = math.floor
 
 UIWidget.__index = UIWidget
@@ -12,16 +17,20 @@ UIWidget.__index = UIWidget
 --- absolute values are pixels
 --- % values are relative to available space + widgets's layout policy
 
-function UIWidget.isUIWidget(o)
+function UIWidget.isA(o, class)
     -- for object get metatable, for class it's superclass by __index
     local mt = getmetatable(o)
-    while mt ~= UIWidget do
+    while mt ~= class do
         if mt == nil then
             return false
         end
         mt = getmetatable(mt) or (mt.__index ~= mt and mt.__index)
     end
     return true
+end
+
+function UIWidget.isUIWidget(o)
+    return UIWidget.isA(o, UIWidget)
 end
 
 function UIWidget.isID(ID)
@@ -45,7 +54,7 @@ end
 ---- passThru
 ---- allowOverflow
 ---- hidden
----- invisible
+---- invisible TODO: move to style
 ---- draggable
 function UIWidget.new(style, flags)
     local valPred = function(x)
@@ -313,7 +322,7 @@ function UIWidget.new(style, flags)
 end
 
 -- to override
-function UIWidget:updater()
+function UIWidget:updater(dt, ...)
 end
 
 function UIWidget:update(...) -- TODO: status passed during tree traversal (anyHovered flag)
@@ -327,7 +336,7 @@ function UIWidget:update(...) -- TODO: status passed during tree traversal (anyH
 end
 
 -- to override
-function UIWidget:renderer()
+function UIWidget:renderer(...)
 end
 
 -- guarantee: elements are setup properly
@@ -340,7 +349,7 @@ function UIWidget:draw(...)
         for _, v in ipairs(self._childrenByZ) do
             -- TODO: allow overflow flag implementation as set scissors to parent
             love.graphics.setScissor(v._visibleAvailAABB:cut(v._AABB):normalized())
-            v:setCursor(0,0)
+            v:setCursor(0, 0)
             v:draw(...)
         end
     end
@@ -350,7 +359,7 @@ function UIWidget.getPercent(val)
     return type(val) == "string" and string.match(val, "^(%-?[0-9]+)%%$")
 end
 
--- return ID of hovered widget (may be self) or nil for none
+-- return hovered widget (may be self) or nil for none
 function UIWidget:getHovered()
     if not self.flags.hidden then
         local hover = nil
@@ -362,7 +371,7 @@ function UIWidget:getHovered()
     return nil
 end
 
--- to override
+-- CHANGE ONLY IF YOU KNOW WHAT YOU'RE DOING
 local function reloadLayoutSelf(self)
     -- assigning has sideeffect of recalculating exact sizes
     self.style.origin.x = self.style.origin:value("x")
@@ -438,7 +447,6 @@ end
 -- drops focus, reset scroll, clear buffers etc.
 --- quarantee - availAABB is always set properly
 function UIWidget:reload(...)
-    self._hovered = false
     self._UI = self._parent._UI
     self:dropFocus()
     self:reloadLayout(true)
@@ -503,7 +511,7 @@ end
 
 -- copy of origin
 function UIWidget:getOrigin()
-    return {x = self.style.origin.x, y = self.style.origin.y}
+    return self.style.origin.x, self.style.origin.y
 end
 
 --* syntactic sugar

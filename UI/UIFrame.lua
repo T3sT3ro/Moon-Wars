@@ -1,29 +1,26 @@
 local UIFrame = {}
+package.loaded[...] = UIFrame
 
 local UIWidget = require "UI/UIWidget"
 local Typeassert = require "utils/Typeassert"
+
 UIFrame.__index = UIFrame
 
 function UIFrame.isFrame(o)
-    local mt = getmetatable(o)
-    while mt ~= UIFrame do
-        if mt == nil then
-            return false
-        end
-        mt = getmetatable(mt) or (mt.__index ~= mt and mt.__index)
-    end
-    return true
+    return UIWidget.isA(o, UIFrame)
 end
 
 -- default:
+---- UIWidget.style.*
+---- UIWidget.flags.*
+-- extra:
 ---- flags.passThru = true
 ---- flags.invisible = true iff displayMode not set
--- extra:
 ---- style.displayMode = ['b|f|bf']: [b]order [f]ill
 function UIFrame.new(style, flags)
+    Typeassert({style, flags}, {{"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}}, "table|nil"})
     style, flags = style or {}, flags or {}
 
-    Typeassert(style.displayMode, {"ANY", "nil", "R:[bf]+"})
     flags.passThru = flags.passThru or true
     flags.invisible = not style.displayMode
     local self = UIWidget(style, flags)
