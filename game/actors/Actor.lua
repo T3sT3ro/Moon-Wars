@@ -31,8 +31,8 @@ function Actor:init(playerId, config)
     end
 end
 
-function Actor:draw(offset)
-    love.graphics.draw(self.asset, self.x*32-offset, self.y*32-offset,0,0.5,0.5)
+function Actor:draw(offsetX,offsetY)
+    love.graphics.draw(self.asset, self.x*32-offsetX, self.y*32-offsetY,0,0.5,0.5)
 end
 
 function Actor:setPos(x, y)

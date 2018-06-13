@@ -180,19 +180,19 @@ function GameMap.update(dt)
     
 end
 
-function GameMap.draw(offset)
+function GameMap.draw(offsetX,offsetY)
     --love.graphics.setColor(1,1,1,1)
     for i=1,20 do
         for j=1,20 do
-            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32 - offset, j*32-offset,0,0.5,0.5)
+            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32 - offsetX, j*32-offsetY,0,0.5,0.5)
             for _,v in pairs(map[i][j].actors) do
-                if v.type ~= "Unit" and v.type ~= "Item" then v:draw(offset) break end
+                if v.type ~= "Unit" and v.type ~= "Item" then v:draw(offsetX,offsetY) break end
             end
             for _,v in pairs(map[i][j].actors) do
-                if v.type == "Item" then v:draw(offset) end
+                if v.type == "Item" then v:draw(offsetX,offsetY) end
             end
             for _,v in pairs(map[i][j].actors) do
-                if v.type == "Unit" then v:draw(offset) break end
+                if v.type == "Unit" then v:draw(offsetX,offsetY) break end
             end
         end
     end

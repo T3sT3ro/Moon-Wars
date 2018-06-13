@@ -98,8 +98,8 @@ function GameManager.update(dt)
     map.update(dt)
 end
 
-function GameManager.draw(self,offset)
-    map.draw(32-offset)
+function GameManager.draw(self,offsetX,offsetY)
+    map.draw(32-offsetX,32-offsetY)
 end
 
 local function pressed(x,y,button)
@@ -121,7 +121,7 @@ local function pressed(x,y,button)
 end
 
 function GameManager.mousePressed(self,x, y, button)
-    local Ox,Oy = self:getOrigin()
+    local Ox,Oy = self:getAABB()[1].x,self:getAABB()[1].y
     pressed(math.floor((x-Ox)/32)+1,math.floor((y-Oy)/32)+1,button)
 end
 

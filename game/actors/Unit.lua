@@ -85,9 +85,9 @@ function Unit:die()
     map.removeActor(self)
 end
 
-function Unit:draw(offset)
-    Actor.draw(self,offset)
-    love.graphics.print(self.health, self.x*32-offset, self.y*32-offset)
+function Unit:draw(offsetX,offsetY)
+    Actor.draw(self,offsetX,offsetY)
+    love.graphics.print(self.health, self.x*32-offsetX, self.y*32-offsetY)
 end
 
 function Unit:debugInfo()

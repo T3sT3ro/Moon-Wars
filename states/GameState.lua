@@ -7,15 +7,18 @@ local UIFrame = require("UI/UIFrame")
 local UIWidget = require("UI/UIWidget")
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
 local font = ResourceManager.get("font.monospace24")
-local GUI = UI(0, 0, 32*20, 32*20)
-local MapFrame = UIWidget()
+local GUI = UI(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+local MainFrame = UIWidget()
+local MapFrame = UIWidget({allign = {x = "center"},size = {x = 20*32, y = 20*32}})
 MapFrame.renderer = manager.draw
 MapFrame.mousePressed = manager.mousePressed
-GUI:setWidget(MapFrame)
+MainFrame:addWidget(MapFrame)
+GUI:setWidget(MainFrame)
 local GameState = {}
 GameState.name = "GameState"
-
+local oldResize 
 function GameState.init()
+    oldResize = love.resize
     oldHandlers = {
         mp = love.mousepressed,
         mr = love.mousereleased,
@@ -28,6 +31,9 @@ function GameState.init()
     }
     local handlers = GUI:getEventHandlers()
 
+    love.resize = function(w,h)
+        GUI:resize(0,0,w,h)
+    end
     love.mousepressed = handlers.mousepressed
     love.mousereleased = handlers.mousereleased
     love.wheelmoved = handlers.wheelmoved
@@ -41,6 +47,7 @@ function GameState.init()
 end
 
 function GameState.clear()
+    love.resize = oldResize
     love.mousepressed = oldHandlers.mp
     love.mousereleased = oldHandlers.mr
     love.wheelmoved = oldHandlers.wm
@@ -59,7 +66,9 @@ function GameState.update(dt)
 end
 
 function GameState.draw()
-    GUI:draw(0)
+    local t = MapFrame:getAABB()[1]
+    GUI:draw(t.x,t.y)
+    love.graphics.print(tostring(t.x).." "..tostring(t.y))
     --manager.draw(0)
 end
 

@@ -44,9 +44,9 @@ function Nexus:tryCraft(name, unit)
     return true
 end
 
-function Nexus:draw(offset)
-    Actor.draw(self,offset)
-    love.graphics.print(self.health, self.x*32-offset, self.y*32-offset)
+function Nexus:draw(offsetX,offsetY)
+    Actor.draw(self,offsetX,offsetY)
+    love.graphics.print(self.health, self.x*32-offsetX, self.y*32-offsetY)
 end
 
 function Nexus:debugInfo()
