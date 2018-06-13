@@ -206,7 +206,7 @@ function GameMap.isMoveable(x, y)
     if map[x] == nil or map[x][y] == nil then return false end
     if map[x][y].type ~= 1 then return false end
     for _,v in pairs(map[x][y].actors) do
-        if v.type ~= "item" then return false end
+        if v.type ~= "Item" then return false end
     end
     return true
 end

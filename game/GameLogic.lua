@@ -94,6 +94,7 @@ end
 function GameLogic.clear()
     _actors = {}
     _unitsOrder = {{},{}}
+    _curUnit = nil
 end
 
 function GameLogic.doAction(actionName, ...)
@@ -230,11 +231,12 @@ end
 helper.addAction("pickup", pickup, {"string", "number", "number"}, 0)
 
 local function drop(name)
-    if not _curUnit.hasItem(name) then
+    if not _curUnit:hasItem(name) then
         return false
     end
 
     local item = _curUnit:getItem(name)
+    _curUnit:removeItem(name)
     item:setPos(_curUnit.x, _curUnit.y)
     map.addActor(item)
     return true
