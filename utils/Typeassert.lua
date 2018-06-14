@@ -13,19 +13,23 @@ local function TP_tostr(pattern, key)
         str = key .. ":"
     end
     if type(pattern) == "function" then
-        str = str .. "(lambda: val -> boolean)"
-    elseif type(pattern) == "table" and pattern[1] == "ANY" then
-        local p = {}
-        for k, v in pairs(pattern) do
-            if k ~= 1 then
-                if type(k) == "number" then
-                    p[k - 1] = TP_tostr(v)
-                else
-                    p[k] = TP_tostr(v)
+        str = str .. "(predicate)"
+    elseif type(pattern) == "table" then
+        if pattern[1] == "ANY" then
+            local p = {}
+            for k, v in pairs(pattern) do
+                if k ~= 1 then
+                    if type(k) == "number" then
+                        p[k - 1] = TP_tostr(v)
+                    else
+                        p[k] = TP_tostr(v)
+                    end
                 end
             end
+            str = str .. "[" .. table.concat(p, "  |  ") .. "]"
+        elseif pattern[1] == "FORALL" then
+            str = str .. "<FORALL: key=" .. TP_tostr(pattern.key) .. "; val=" .. TP_tostr(pattern.val) .. ">"
         end
-        str = str .. "[" .. table.concat(p, "  |  ") .. "]"
     elseif type(pattern) == "table" then
         local t = {}
         for k, v in pairs(pattern) do
@@ -43,15 +47,20 @@ local function TP_tostr(pattern, key)
     return str
 end
 
+local function TP_isStrPattern(pattern)
+    return type(pattern) == "string" and string.match(pattern, "^R:.*")
+end
+
 local function TP_errmsg(expected, val, key)
-    return string.format("Typeassert: got '%s' expected '%s'", type(val), TP_tostr(expected, key))
+    val = (TP_isStrPattern(expected) and "string=" .. val) or type(val)
+    return string.format("Typeassert: got '%s' expected '%s'", val, TP_tostr(expected, key))
 end
 
 local function TP_assert(val, pattern, key)
     if pattern == nil then
         return nil
     elseif type(pattern) == "string" then
-        if string.sub(pattern, 1, 2) == "R:" and type(val) == "string" then -- pattern match
+        if TP_isStrPattern(pattern) and type(val) == "string" then -- pattern match
             if string.match(val, string.sub(pattern, 3)) == val then
                 return nil
             end
@@ -73,6 +82,22 @@ local function TP_assert(val, pattern, key)
                 end
             end
             return TP_errmsg(TP_tostr(pattern), val, key)
+        elseif pattern[1] == "FORALL" then -- {"FORALL", key=<keypattern>, val=<valpattern>} every key, pair in
+            if type(val) == "table" then -- iterate over whole value table and test key and val patterns
+                for k, v in pairs(val) do
+                    local err = TP_assert(k, pattern.key, "<FORALL key>")
+                    if err then
+                        return err
+                    end
+                    local err = TP_assert(v, pattern.val, "<FORALL val>")
+                    if err then
+                        return err
+                    end
+                end
+                return nil
+            else
+                return TP_errmsg(pattern, val, key)
+            end
         elseif type(val) == "table" then --- recurrent typechecking
             for k, v in pairs(pattern) do
                 local err = TP_assert(rawget(val, k), v, k)
