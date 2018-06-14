@@ -15,6 +15,7 @@ UI.theme = {
     Color("#c1404dbb"),
     Color("#ffa535bb"),
     Color("#ffcd32bb"),
+    Color("#a8f9ff"),
     font = love.graphics.newFont(14)
 }
 

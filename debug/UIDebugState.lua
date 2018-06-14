@@ -36,7 +36,7 @@ local f2 = UIWidget({ID = "f2", allign = {x = "left", y = "up"}, size = {x = "50
 local f3 = UIWidget({ID = "f3", allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
 local f4 = UIWidget({ID = "f4", size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
 local f5 = UIWidget({ID = "f5", origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
-local progress = UIProgressBar(30, {size = {y = 20}, origin = {y = -40}, showValue=true})
+local progress = UIProgressBar({size = {y = 20}, origin = {y = -40}, showValue=true, format = "progress: %d%%"}, 30)
 local TEXT_1 = love.graphics.newText(font, "BTTN")
 local bttn =
     UIButton(
