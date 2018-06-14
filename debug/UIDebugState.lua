@@ -4,6 +4,8 @@ local UI = require "UI/UI"
 local UIWidget = require "UI/UIWidget"
 local UIFrame = require "UI/UIFrame"
 local UIButton = require "UI/UIButton"
+local UIProgressBar = require "UI/UIProgressBar"
+
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
 
@@ -20,21 +22,26 @@ font = ResourceManager.get("font.monospace24")
 local stateDesc
 local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
 local margin = 30
+
+--- CONF
+local printEvents = false
+local printProxyEvents = false
 local GUI = UI(margin, margin, w_width - 2 * margin, w_height - 2 * margin)
-local mainframe = UIFrame({allign = {x = "left"}})
-local side = UIFrame({size = {x = "20%"}, allign = {x = "right"}, displayMode = "bf"})
-local body = UIFrame({size = {x = "80%"}, allign = {x = "left"}})
-local f0 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
-local f1 = UIWidget({size = {x = "80%", y = "80%"}, margin = {all = 30}})
-local f2 = UIWidget({allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
-local f3 = UIWidget({allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
-local f4 = UIWidget({size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
-local f5 = UIWidget({origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
+local mainframe = UIFrame({ID = "mainframe", allign = {x = "left"}})
+local side = UIFrame({ID = "side", size = {x = "20%"}, allign = {x = "right"}, displayMode = "bf"})
+local body = UIFrame({ID = "body", size = {x = "80%"}, allign = {x = "left"}})
+local f0 = UIWidget({ID = "f0", size = {x = "80%", y = "80%"}, margin = {all = 30}})
+local f1 = UIWidget({ID = "f1", size = {x = "80%", y = "80%"}, margin = {all = 30}})
+local f2 = UIWidget({ID = "f2", allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
+local f3 = UIWidget({ID = "f3", allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
+local f4 = UIWidget({ID = "f4", size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
+local f5 = UIWidget({ID = "f5", origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
+local progress = UIProgressBar(30, {size = {y = 20}, origin = {y = -40}, showValue=true})
 local TEXT_1 = love.graphics.newText(font, "BTTN")
 local bttn =
     UIButton(
     "normal",
-    {margin = {x = 15}, size = {x = "80%", y = TEXT_1:getHeight()}, allign = {x = "center"}},
+    {ID = "BTTN", margin = {x = 15}, size = {x = "80%", y = TEXT_1:getHeight()}, allign = {x = "center"}},
     TEXT_1,
     function()
         print "CLICKED"
@@ -43,6 +50,17 @@ local bttn =
 bttn.buttonHeld = function(self, delta)
     print("HELD for " .. delta)
 end
+local delta = 1
+
+progress.updater = function(self, dt)
+    if self.value == 120 then
+        delta = -1
+    elseif self.value == -20 then
+        delta = 1
+    end
+    self.value = self.value + delta
+end
+---
 
 GUI:setWidget(mainframe)
 mainframe:addWidget(body)
@@ -54,6 +72,7 @@ f1:addWidget(f3)
 f3:addWidget(f4)
 f4:addWidget(f5)
 
+side:addWidget(progress)
 side:addWidget(bttn)
 
 local widgetRenderer = function(self)
@@ -69,7 +88,7 @@ local widgetRenderer = function(self)
     love.graphics.setColor(red:normalized())
     love.graphics.rectangle("line", self:getAABB():normalized())
     love.graphics.setColor(white:normalized())
-    love.graphics.print(self._ID, self._AABB[1].x, self._AABB[1].y)
+    love.graphics.print(self.style.ID, self._AABB[1].x, self._AABB[1].y)
     if self.info then
         local cx, cy = self:getRawCursor()
         love.graphics.print(self.info, cx + 14, cy)
@@ -87,35 +106,64 @@ f5.renderer, f5.info = widgetRenderer, "shifted\nmov"
 
 local oldHandlers = {mc, mr, wm, kp, kr, ti, fd, dd}
 local function _EVTme(self)
-    print("EVT: me", self._ID)
+    return printEvents and print("EVT: me", self.style.ID)
 end
 local function _EVTmx(self)
-    print("EVT: mx", self._ID)
+    return printEvents and print("EVT: mx", self.style.ID)
 end
 local function _EVTmc(self, x, y, button)
-    print("EVT: mc", self._ID, x, y, button)
-    self:requestFocus()
+    return self:requestFocus() and printEvents and print("EVT: mc", self.style.ID, x, y, button)
 end
 local function _EVTmr(self, x, y, button)
-    print("EVT: mr", self._ID, x, y, button)
+    return printEvents and print("EVT: mr", self.style.ID, x, y, button)
 end
 local function _EVTwm(self, x, y)
-    print("EVT: wm", self._ID, x, y)
+    return printEvents and print("EVT: wm", self.style.ID, x, y)
 end
 local function _EVTkp(self, key, scancode, isRepeat)
-    print("EVT: kp", self._ID, key, scancode, isRepeat)
+    return printEvents and print("EVT: kp", self.style.ID, key, scancode, isRepeat)
 end
 local function _EVTkr(self, key, scancode)
-    print("EVT: kr", self._ID, key, scancode)
+    return printEvents and print("EVT: kr", self.style.ID, key, scancode)
 end
 local function _EVTti(self, text)
-    print("EVT: ti", self._ID, text)
+    return printEvents and print("EVT: ti", self.style.ID, text)
 end
 local function _EVTfd(self, file)
-    print("EVT: fd", self._ID, file)
+    return printEvents and print("EVT: fd", self.style.ID, file)
 end
 local function _EVTdd(self, path)
-    print("EVT: dd", self._ID, path)
+    return printEvents and print("EVT: dd", self.style.ID, path)
+end
+local function _EVTmeProxy(self)
+    return printProxyEvents and print("EPX_: me", self.style.ID)
+end
+local function _EVTmxProxy(self)
+    return printProxyEvents and print("EPX_: mx", self.style.ID)
+end
+local function _EVTmcProxy(self, x, y, button)
+    return self:requestFocus() and printProxyEvents and print("EPX_: mc", self.style.ID, x, y, button)
+end
+local function _EVTmrProxy(self, x, y, button)
+    return printProxyEvents and print("EPX_: mr", self.style.ID, x, y, button)
+end
+local function _EVTwmProxy(self, x, y)
+    return printProxyEvents and print("EPX_: wm", self.style.ID, x, y)
+end
+local function _EVTkpProxy(self, key, scancode, isRepeat)
+    return printProxyEvents and print("EPX_: kp", self.style.ID, key, scancode, isRepeat)
+end
+local function _EVTkrProxy(self, key, scancode)
+    return printProxyEvents and print("EPX_: kr", self.style.ID, key, scancode)
+end
+local function _EVTtiProxy(self, text)
+    return printProxyEvents and print("EPX_: ti", self.style.ID, text)
+end
+local function _EVTfdProxy(self, file)
+    return printProxyEvents and print("EPX_: fd", self.style.ID, file)
+end
+local function _EVTddProxy(self, path)
+    return printProxyEvents and print("EPX_: dd", self.style.ID, path)
 end
 
 for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
@@ -129,6 +177,16 @@ for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
     v.textInput = _EVTti
     v.fileDropped = _EVTfd
     v.directoryDropped = _EVTdd
+    v.mouseEnteredProxy = _EVTmeProxy
+    v.mouseExitedProxy = _EVTmxProxy
+    v.mousePressedProxy = _EVTmcProxy
+    v.mouseReleasedProxy = _EVTmrProxy
+    v.wheelMovedProxy = _EVTwmProxy
+    v.keyPressedProxy = _EVTkpProxy
+    v.keyReleasedProxy = _EVTkrProxy
+    v.textInputProxy = _EVTtiProxy
+    v.fileDroppedProxy = _EVTfdProxy
+    v.directoryDroppedProxy = _EVTddProxy
 end
 
 f2.updater = function(self, dt)
@@ -145,7 +203,7 @@ f2.updater = function(self, dt)
 end
 
 f5.updater = function(self, dt)
-    if self:isHovered() then
+    if self:isFocused() then
         local delta = 1
         if love.keyboard.isDown("left") then
             self.style.origin.x = self.style.origin.x - delta
@@ -160,6 +218,10 @@ f5.updater = function(self, dt)
             self.style.origin.y = self.style.origin.y + delta
         end
     end
+end
+
+function f1:mousePressedProxy(x, y, button)
+    print("pressed in f1 subtree")
 end
 
 function UIDebugState.init()
@@ -229,7 +291,7 @@ end
 
 local function drawAABB(AABB, c, n)
     local x, y, w, h = love.graphics.getScissor()
-    love.graphics.setScissor(GUI.origin.x, GUI.origin.y, GUI:width(), GUI:height())
+    love.graphics.setScissor(GUI.origin.x, GUI.origin.y, GUI:getWidth(), GUI:getHeight())
     local original = Color(love.graphics.getColor())
     love.graphics.newText(ResourceManager.get("fonts.Montserrat-Regular"), "UI_DEBUG_STATE")
     love.graphics.setColor(white:normalized())

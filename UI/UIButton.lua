@@ -26,7 +26,6 @@ function UIButton.new(type, style, content, callback)
     local self = UIWidget(style)
     self.flags.enable = type == "checkbox"
     self.clickDuration = 0
-    self.pressed = false -- pressed and held
     self.enabled = false -- checkbox
     self.buttonClicked = callback -- callback setup
     self.contentFrame = UIWidget({}, {invisible = false, passThru = true})
@@ -77,14 +76,14 @@ end
 -- @override
 function UIButton:mousePressed(x, y, button)
     if button == 1 and self:requestFocus() then
-        self.pressed = true
+        self.clickDuration = 0
     end
 end
 
 -- @override
 function UIButton:mouseReleased(x, y, button)
     if button == 1 then
-        if self:getUI():getClickBegin() == self and self:getUI():getClickEnd() == self then
+        if self:isPressed() and self:getUI():getClickEnd(button) == self then
             if self.flags.enable then
                 self.enabled = not self.enabled
             end
@@ -94,6 +93,12 @@ function UIButton:mouseReleased(x, y, button)
         self.clickDuration = 0
         self:dropFocus()
     end
+end
+
+function UIButton:requestDropFocus()
+    self.pressed = false
+    self.clickDuration = 0
+    self:dropFocus()
 end
 
 function UIButton:updater(dt, ...)
@@ -127,7 +132,7 @@ end
 
 -- true iff mouse is held and it started over button
 function UIButton:isPressed()
-    return self.pressed
+    return self._UI:getClickBegin(1) == self
 end
 
 -- true if enabled, in checkbox mode

@@ -34,12 +34,12 @@ function UIWidget.isUIWidget(o)
 end
 
 function UIWidget.isID(ID)
-    return type(ID) == "number"
+    return type(ID) == "number" or type(ID) == "string"
 end
 
 function UIWidget:nextID(...)
     UIWidget.UUIDseed = UIWidget.UUIDseed + 1
-    return UIWidget.UUIDseed
+    return "wg#" .. UIWidget.UUIDseed
 end
 
 -- style:
@@ -66,6 +66,7 @@ function UIWidget.new(style, flags)
             "ANY",
             "nil",
             {
+                ID = "number|string|nil",
                 z = "number|nil",
                 allign = {
                     "ANY",
@@ -116,6 +117,7 @@ function UIWidget.new(style, flags)
 
     --- DEFAULT STYLE
     style = style or {allign = {}, origin = {}, size = {}, margin = {}, theme = {}}
+    style.ID = style.ID or UIWidget.nextID()
     style.z = style.z or 0
     style.allign = style.allign or {}
     style.allign.x = style.allign.x or "center"
@@ -189,10 +191,10 @@ function UIWidget.new(style, flags)
 
                 if k == "x" then
                     self._layoutModified = self._layoutModified or (valP ~= t._xP) or (val ~= t._x)
-                    t._xP, t._x = (valP and val), ((valP and floor(self._availAABB:width() * (valP / 100))) or val)
+                    t._xP, t._x = (valP and val), ((valP and floor(self._availAABB:getWidth() * (valP / 100))) or val)
                 elseif k == "y" then
                     self._layoutModified = self._layoutModified or (valP ~= t._yP) or (val ~= t._y)
-                    t._yP, t._y = (valP and val), ((valP and floor(self._availAABB:height() * (valP / 100))) or val)
+                    t._yP, t._y = (valP and val), ((valP and floor(self._availAABB:getHeight() * (valP / 100))) or val)
                 end
             end,
             _value = function(self, k) -- returns stored value
@@ -241,16 +243,16 @@ function UIWidget.new(style, flags)
                 local valP = UIWidget.getPercent(val)
                 if k == "left" then
                     self._layoutModified = self._layoutModified or (valP ~= t._lP) or (val ~= t._l)
-                    t._lP, t._l = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
+                    t._lP, t._l = (valP and val), ((valP and floor(self._AABB:getWidth() * (valP / 100))) or val)
                 elseif k == "right" then
                     self._layoutModified = self._layoutModified or (valP ~= t._rP) or (val ~= t._r)
-                    t._rP, t._r = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
+                    t._rP, t._r = (valP and val), ((valP and floor(self._AABB:getWidth() * (valP / 100))) or val)
                 elseif k == "up" then
                     self._layoutModified = self._layoutModified or (valP ~= t._uP) or (val ~= t._u)
-                    t._uP, t._u = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
+                    t._uP, t._u = (valP and val), ((valP and floor(self._AABB:getHeight() * (valP / 100))) or val)
                 elseif k == "down" then
                     self._layoutModified = self._layoutModified or (valP ~= t._dP) or (val ~= t._d)
-                    t._dP, t._d = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
+                    t._dP, t._d = (valP and val), ((valP and floor(self._AABB:getHeight() * (valP / 100))) or val)
                 elseif k == "x" then -- use previous
                     T.left = val
                     T.right = val
@@ -287,7 +289,6 @@ function UIWidget.new(style, flags)
 
     self.__index = UI
     self._UI = nil
-    self._ID = UIWidget.nextID() -- might be obsolete, because objects self identifies itself by unique table
     self._childrenByZ = {}
     self._parent = self -- stand-alone widgets shouldn't exist
     self._visibleAvailAABB = AABB(0, 0, 0, 0) -- AABB inside availAABB that will be actually displayed
@@ -295,6 +296,7 @@ function UIWidget.new(style, flags)
     self._AABB = AABB(0, 0, 0, 0) -- requested AABB according to availAABB [- parent.margins]
     self._layoutModified = true
 
+    self.style.ID = style.ID
     self.style.z = style.z
     self.style.allign.x = style.allign.x
     self.style.allign.y = style.allign.y
@@ -390,17 +392,17 @@ local function reloadLayoutSelf(self)
     local x2 = x1 + self.style.size.x
     local y2 = y1 + self.style.size.y
     if self.style.allign.x == "center" then
-        local dx = floor((self._availAABB:width() - self.style.size.x) / 2)
+        local dx = floor((self._availAABB:getWidth() - self.style.size.x) / 2)
         x1, x2 = x1 + dx, x2 + dx
     elseif self.style.allign.x == "right" then
-        local dx = self._availAABB:width() - self.style.size.x
+        local dx = self._availAABB:getWidth() - self.style.size.x
         x1, x2 = x1 + dx, x2 + dx
     end
     if self.style.allign.y == "center" then
-        local dy = floor((self._availAABB:height() - self.style.size.y) / 2)
+        local dy = floor((self._availAABB:getHeight() - self.style.size.y) / 2)
         y1, y2 = y1 + dy, y2 + dy
     elseif self.style.allign.y == "down" then
-        local dy = self._availAABB:height() - self.style.size.y
+        local dy = self._availAABB:getHeight() - self.style.size.y
         y1, y2 = y1 + dy, y2 + dy
     end
     self._AABB:set(
@@ -509,9 +511,14 @@ function UIWidget:getVisibleAvailAABB()
     return AABB(self._visibleAvailAABB)
 end
 
--- copy of origin
+-- copy of style.origin
 function UIWidget:getOrigin()
     return self.style.origin.x, self.style.origin.y
+end
+
+-- returns x, y of self upper left corner
+function UIWidget:getScreenOrigin()
+    return self._AABB[1].x, self._AABB[1].y
 end
 
 --* syntactic sugar
@@ -569,7 +576,7 @@ function UIWidget:isFocused()
 end
 
 function UIWidget:dropFocus()
-    if self._UI and self._UI._focusedWidget == self then
+    if self:isFocused() then
         self._UI._focusedWidget = nil
     end
 end
@@ -619,7 +626,7 @@ end
 
 -- returns widget by ID or nil if it doesn't exist in UI tree
 function UIWidget:getWidgetByID(id)
-    if self._ID == id then
+    if self.style.ID and self.style.ID == id then
         return self
     end
     for _, widget in ipairs(self._childrenByZ) do
@@ -683,6 +690,65 @@ end
 function UIWidget:directoryDropped(path)
 end
 
+--------------------------
+-- Proxy events are triggered if corresponding event is emmited to the child
+function UIWidget:mouseEnteredProxy()
+end
+function UIWidget:mouseExitedProxy()
+end
+function UIWidget:mousePressedProxy(x, y, button)
+end
+function UIWidget:mouseReleasedProxy(x, y, button)
+end
+function UIWidget:wheelMovedProxy(x, y, button)
+end
+function UIWidget:keyPressedProxy(key, scancode, isRepeat)
+end
+function UIWidget:keyReleasedProxy(key, scancode)
+end
+function UIWidget:textInputProxy(text)
+end
+function UIWidget:fileDroppedProxy(file)
+end
+function UIWidget:directoryDroppedProxy(path)
+end
+
+function UIWidget:getProxyEvent(name)
+    name = name or ""
+    local f
+    if name == "mousePressed" then
+        f = self.mousePressedProxy
+    elseif name == "mouseReleased" then
+        f = self.mouseReleasedProxy
+    elseif name == "mouseEntered" then
+        f = self.mouseEnteredProxy
+    elseif name == "wheelMoved" then
+        f = self.wheelMovedProxy
+    elseif name == "mouseExited" then
+        f = self.mouseExitedProxy
+    elseif name == "keyPressed" then
+        f = self.keyPressedProxy
+    elseif name == "keyReleased" then
+        f = self.keyReleasedProxy
+    elseif name == "textInput" then
+        f = self.textInputProxy
+    elseif name == "fileDropped" then
+        f = self.fileDroppedProxy
+    elseif name == "directoryDropped" then
+        f = self.directoryDroppedProxy
+    else
+        error("UIWidget: unknown proxy event '" .. name .. "'")
+    end
+    if self._parent == self then -- toplevel
+        return f
+    else
+        local fp = self._parent:getProxyEvent(name)
+        return function(...)
+            fp(...) -- FIXME: f(..., fp(...)) ??? for parent returns
+            f(self, ...)
+        end
+    end
+end
 --------------------------
 return setmetatable(
     UIWidget,

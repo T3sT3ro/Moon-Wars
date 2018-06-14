@@ -35,9 +35,9 @@ function AABB:expand(l, r, u, d)
     if type(l) == "string" then
         if l == "left" then
             l, r, u, d = r, 0, 0, 0
-        elseif l == "up" then
-            l, r, u, d = 0, r, 0, 0
         elseif l == "right" then
+            l, r, u, d = 0, r, 0, 0
+        elseif l == "up" then
             l, r, u, d = 0, 0, r, 0
         elseif l == "down" then
             l, r, u, d = 0, 0, 0, r
@@ -77,20 +77,20 @@ function AABB:values()
     return self[1].x, self[1].y, self[2].x, self[2].y
 end
 
-function AABB:width()
+function AABB:getWidth()
     return self[2].x - self[1].x
 end
 
-function AABB:height()
+function AABB:getHeight()
     return self[2].y - self[1].y
 end
 
 function AABB:dimensions()
-    return self:width(), self:height()
+    return self:getWidth(), self:getHeight()
 end
 
 function AABB:normalized()
-    return self[1].x, self[1].y, self:width(), self:height()
+    return self[1].x, self[1].y, self:getWidth(), self:getHeight()
 end
 
 -- check if point (a, b) is inside AABB or if a is AABB if it is fully contained
@@ -113,7 +113,7 @@ end
 
 -- returns true if AABB has 0 size in any dimension
 function AABB:isEmpty() 
-    return self[1].x == self[2].x or self[1].y == self[2].y
+    return self[1].x >= self[2].x or self[1].y >= self[2].y
 end
 
 return setmetatable(
