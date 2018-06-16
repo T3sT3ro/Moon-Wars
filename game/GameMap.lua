@@ -221,6 +221,7 @@ end
 
 
 function GameMap.removeActor(actor)
+    if map[actor.x][actor.y].actors[actor.id] == nil then error("No actor on map") end
     map[actor.x][actor.y].actors[actor.id] = nil
 end
 

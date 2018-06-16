@@ -57,7 +57,7 @@ local function createInitActors(playerId)
     end
 
     addInitActor(initActors, 1, "Nexus", playerId, playerId == 1 and "nexus_red" or "nexus_blue")
-    addInitActor(initActors, 4, "Unit", playerId, "unit")
+    addInitActor(initActors, 4, "Unit", playerId, playerId == 1 and "unit_red" or "unit_blue")
     addInitActor(initActors, 3, "Resource", playerId, "tree")
     addInitActor(initActors, 2, "Resource", playerId, "rock")
     addInitActor(initActors, 1, "Resource", playerId, "crystalMine")
