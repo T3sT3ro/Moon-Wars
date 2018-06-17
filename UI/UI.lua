@@ -10,12 +10,12 @@ local Color = require "UI/Color"
 UI.__index = UI
 
 UI.theme = {
-    Color("#63002dbb"),
-    Color("#8b003fbb"),
-    Color("#c1404dbb"),
-    Color("#ffa535bb"),
-    Color("#ffcd32bb"),
-    Color("#a8f9ff"),
+    [1] = Color("#63002dbb"),
+    [2] = Color("#8b003fbb"),
+    [3] = Color("#c1404dbb"),
+    [4] = Color("#ffa535bb"),
+    [5] = Color("#ffcd32bb"),
+    [6] = Color("#a8f9ff"),
     font = love.graphics.newFont(14)
 }
 
@@ -29,7 +29,7 @@ end
 
 function UI:nextID(...)
     UI.UUIDseed = UI.UUIDseed + 1
-    return "ui#"..UI.UUIDseed
+    return "ui#" .. UI.UUIDseed
 end
 
 -- fields:
@@ -49,8 +49,8 @@ function UI.new(x, y, width, height)
             _widget = nil,
             _hoveredWidget = nil,
             _focusedWidget = nil,
-            _clickBegin = {{},{},{}},
-            _clickEnd = {{},{},{}},
+            _clickBegin = {{}, {}, {}},
+            _clickEnd = {{}, {}, {}},
             origin = {x = x, y = y}, -- on screen real dimensions
             size = {x = width, y = height}, --- ^^^
             cursor = {x = x, y = y} -- relative to window's top-left corner, used for drawing UI elements

@@ -14,22 +14,20 @@ local function TP_tostr(pattern, key)
     end
     if type(pattern) == "function" then
         str = str .. "(predicate)"
-    elseif type(pattern) == "table" then
-        if pattern[1] == "ANY" then
-            local p = {}
-            for k, v in pairs(pattern) do
-                if k ~= 1 then
-                    if type(k) == "number" then
-                        p[k - 1] = TP_tostr(v)
-                    else
-                        p[k] = TP_tostr(v)
-                    end
+    elseif type(pattern) == "table" and pattern[1] == "ANY" then
+        local p = {}
+        for k, v in pairs(pattern) do
+            if k ~= 1 then
+                if type(k) == "number" then
+                    p[k - 1] = TP_tostr(v)
+                else
+                    p[k] = TP_tostr(v)
                 end
             end
-            str = str .. "[" .. table.concat(p, "  |  ") .. "]"
-        elseif pattern[1] == "FORALL" then
-            str = str .. "<FORALL: key=" .. TP_tostr(pattern.key) .. "; val=" .. TP_tostr(pattern.val) .. ">"
         end
+        str = str .. "[" .. table.concat(p, "  |  ") .. "]"
+    elseif type(pattern) == "table" and pattern[1] == "FORALL" then
+        str = str .. "<FORALL: key=" .. TP_tostr(pattern.key) .. "; val=" .. TP_tostr(pattern.val) .. ">"
     elseif type(pattern) == "table" then
         local t = {}
         for k, v in pairs(pattern) do

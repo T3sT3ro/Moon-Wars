@@ -93,7 +93,8 @@ function UIWidget.new(style, flags)
                         fg = {"ANY", "nil", Color.isColor},
                         fg_focus = {"ANY", "nil", Color.isColor},
                         hilit = {"ANY", "nil", Color.isColor},
-                        hilit_focus = {"ANY", "nil", Color.isColor}
+                        hilit_focus = {"ANY", "nil", Color.isColor},
+                        font = "nil|userdata"
                     }
                 }
             }
@@ -281,8 +282,13 @@ function UIWidget.new(style, flags)
         {},
         {
             __index = function(t, k) -- returns value from _
-                local code = ({bg = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5})[k]
-                return (code and self._UI and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
+                local code =
+                    ({bg = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5, contrast = 6, font = "font"})[k]
+                if type(code) == "number" then
+                    return (code and self._UI and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
+                elseif code == 'font' then
+                    return (code and self._UI and self._UI.theme[code]) or love.graphics.newFont(10)
+                end
             end
         }
     )
@@ -313,6 +319,7 @@ function UIWidget.new(style, flags)
     self.style.theme.fg_focus = style.theme.fg_focus
     self.style.theme.hilit_focus = style.theme.hilit_focus
     self.style.theme.hilit = style.theme.hilit
+    self.style.theme.font = style.theme.font
 
     self.flags.keepFocus = flags.keepFocus
     self.flags.passThru = flags.passThru
@@ -374,7 +381,7 @@ function UIWidget:getHovered()
 end
 
 -- CHANGE ONLY IF YOU KNOW WHAT YOU'RE DOING
-local function reloadLayoutSelf(self)
+function UIWidget:reloadLayoutSelf()
     -- assigning has sideeffect of recalculating exact sizes
     self.style.origin.x = self.style.origin:value("x")
     self.style.origin.y = self.style.origin:value("y")
@@ -416,7 +423,7 @@ end
 -- guarantee: availAABB and visibleAvailAABB set properly
 function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was updated
     if not self.flags.hidden and doReload or self._layoutModified then -- resources save on hidden objects
-        reloadLayoutSelf(self)
+        self:reloadLayoutSelf()
         -- z-index children sort
         table.sort(
             self._childrenByZ,

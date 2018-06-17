@@ -16,7 +16,7 @@ end
 -- extra:
 ---- flags.passThru = true
 ---- flags.invisible = true iff displayMode not set
----- style.displayMode = ['b|f|bf']: [b]order [f]ill
+---- style.displayMode = '[bf]': [b]order [f]ill
 function UIFrame.new(style, flags)
     Typeassert({style, flags}, {{"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}}, "table|nil"})
     style, flags = style or {}, flags or {}

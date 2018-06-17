@@ -4,7 +4,8 @@ love = {
     mouse = {x = 0, y = 0, wheel = {x = 0, y = 0}},
     scissor = nil,
     graphics = {width = 800, height = 600},
-    color = {0, 0, 0, 0}
+    color = {0, 0, 0, 0},
+    stack = {}
 }
 function love.graphics.getWidth()
     print("love.graphics.getWidth():", "~>", love.graphics.width)
@@ -28,15 +29,19 @@ function love.graphics.print(...)
 end
 function love.graphics.newImage(...)
     print("love.graphics.newImage():", ...)
-    return {        getWidth = function(self)
-        print("text:getWidth()")
-        return 30
-    end,
-    getHeight = function(self)
-        print("text:getHeight()")
-        return 10
-    end,
-    typeOf = function(self, t) return t == "Image" end}
+    return {
+        getWidth = function(self)
+            print("text:getWidth()")
+            return 30
+        end,
+        getHeight = function(self)
+            print("text:getHeight()")
+            return 10
+        end,
+        typeOf = function(self, t)
+            return t == "Image"
+        end
+    }
 end
 function love.graphics.newFont(...)
     print("love.graphics.newFont():", ...)
@@ -53,7 +58,9 @@ function love.graphics.newText(...)
             print("text:getHeight()")
             return 10
         end,
-        typeOf = function(self, t) return t == "Text" end
+        typeOf = function(self, t)
+            return t == "Text"
+        end
     }
 end
 function love.graphics.setScissor(x, y, w, h)
@@ -120,4 +127,16 @@ end
 function love.mouse.getY()
     print("love.mouse.getY():", "~>", love.mouse.y)
     return love.mouse.y
+end
+function love.graphics.push(x)
+    print(string.format("love.graphics.push(" .. (x or "") .. ")"))
+    love.stack[#love.stack + 1] = {color, scissor}
+    love.color = {0, 0, 0, 0}
+    love.scissor = nil
+end
+function love.graphics.pop(x)
+    print(string.format("love.graphics.pop(" .. (x or "") .. ")"))
+    love.color = love.stack[#love.stack].color
+    love.scissor = love.stack[#love.stack].scissor
+    table.remove(love.stack)
 end

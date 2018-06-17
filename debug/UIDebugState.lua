@@ -5,6 +5,7 @@ local UIWidget = require "UI/UIWidget"
 local UIFrame = require "UI/UIFrame"
 local UIButton = require "UI/UIButton"
 local UIProgressBar = require "UI/UIProgressBar"
+local UILabel = require "UI/UILabel"
 
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
@@ -17,7 +18,9 @@ local white = Color("#ffffff")
 local red = Color("#ff1b2b")
 local click = {start = nil, stop = nil}
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
+ResourceManager.load("font.monospace12", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 12)
 font = ResourceManager.get("font.monospace24")
+font12 = ResourceManager.get("font.monospace12")
 
 local stateDesc
 local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
@@ -36,7 +39,8 @@ local f2 = UIWidget({ID = "f2", allign = {x = "left", y = "up"}, size = {x = "50
 local f3 = UIWidget({ID = "f3", allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
 local f4 = UIWidget({ID = "f4", size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
 local f5 = UIWidget({ID = "f5", origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
-local progress = UIProgressBar({size = {y = 20}, origin = {y = -40}, showValue=true, format = "progress: %d%%"}, 30)
+local progress = UIProgressBar({size = {y = 20}, origin = {y = -40}, showValue = true, format = "progress: %d%%"}, 30)
+local lore = UILabel("Dolor sit amet et amona magnificenti luna lua de la vista.", {theme = {font = font24}})
 local TEXT_1 = love.graphics.newText(font, "BTTN")
 local bttn =
     UIButton(
@@ -72,6 +76,8 @@ f1:addWidget(f3)
 f3:addWidget(f4)
 f4:addWidget(f5)
 
+side:addWidget(lore)
+print(lore.style.size.x)
 side:addWidget(progress)
 side:addWidget(bttn)
 
@@ -189,6 +195,37 @@ for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
     v.directoryDroppedProxy = _EVTddProxy
 end
 
+function f1:mousePressedProxy(x, y, button)
+    print("pressed in f1 subtree")
+end
+
+function UIDebugState.init()
+    oldHandlers = {
+        mp = love.mousepressed,
+        mr = love.mousereleased,
+        wm = love.wheelmoved,
+        kp = love.keypressed,
+        kr = love.keyreleased,
+        ti = love.textinput,
+        fd = love.filedropped,
+        dd = love.directorydropped
+    }
+    local handlers = GUI:getEventHandlers()
+
+    love.mousepressed = handlers.mousepressed
+    love.mousereleased = handlers.mousereleased
+    love.wheelmoved = handlers.wheelmoved
+    love.keypressed = handlers.keypressed
+    love.keyreleased = handlers.keyreleased
+    love.textinput = handlers.textinput
+    love.filedropped = handlers.filedropped
+    love.directorydropped = handlers.directorydropped
+    stateDesc = stateDesc or love.graphics.newText(font, "UI_DEBUG_STATE")
+    click.start, click.stop = nil, nil
+    w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
+end
+
+
 f2.updater = function(self, dt)
     self.cntr = self.cntr or 0
     self.cntr = self.cntr + 1
@@ -220,46 +257,19 @@ f5.updater = function(self, dt)
     end
 end
 
-function f1:mousePressedProxy(x, y, button)
-    print("pressed in f1 subtree")
-end
-
-function UIDebugState.init()
-    oldHandlers = {
-        mp = love.mousepressed,
-        mr = love.mousereleased,
-        wm = love.wheelmoved,
-        kp = love.keypressed,
-        kr = love.keyreleased,
-        ti = love.textinput,
-        fd = love.filedropped,
-        dd = love.directorydropped
-    }
-    local handlers = GUI:getEventHandlers()
-
-    love.mousepressed = handlers.mousepressed
-    love.mousereleased = handlers.mousereleased
-    love.wheelmoved = handlers.wheelmoved
-    love.keypressed = handlers.keypressed
-    love.keyreleased = handlers.keyreleased
-    love.textinput = handlers.textinput
-    love.filedropped = handlers.filedropped
-    love.directorydropped = handlers.directorydropped
-    stateDesc = stateDesc or love.graphics.newText(font, "UI_DEBUG_STATE")
-    click.start, click.stop = nil, nil
-    w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
-end
-
-function UIDebugState.clear()
-    click.start, click.stop = nil, nil
-    love.mousepressed = oldHandlers.mp
-    love.mousereleased = oldHandlers.mr
-    love.wheelmoved = oldHandlers.wm
-    love.keypressed = oldHandlers.kp
-    love.keyreleased = oldHandlers.kr
-    love.textinput = oldHandlers.ti
-    love.filedropped = oldHandlers.fd
-    love.directorydropped = oldHandlers.dd
+lore.timeElapsed = 0
+lore.updater = function (self, dt)
+    lore.timeElapsed = lore.timeElapsed + dt
+    if lore.timeElapsed > 2 then
+        lore.timeElapsed = 0
+        self.style.theme.hilit = UI.theme[5]
+        self.style.theme.font = font12
+        self:setText("longer test and wrap test test test verylongsinglewordthatshouldwrapsomehow another line here")
+    elseif lore.timeElapsed > 1 then
+        self.style.theme.hilit = UI.theme[3]
+        self.style.theme.font = font
+        self:setText("test")
+    end
 end
 
 function UIDebugState.update(dt)
@@ -314,6 +324,8 @@ function UIDebugState.draw()
     love.graphics.draw(stateDesc, 0, 0)
     local mousePosText = love.graphics.newText(font, string.format("Mouse:\t(%d\t,%d)", love.mouse.getPosition()))
     love.graphics.draw(mousePosText, w_width - mousePosText:getWidth(), w_height - mousePosText:getHeight())
+    local memText = love.graphics.newText(font, string.format("Memory: %04d kB", collectgarbage('count')))
+    love.graphics.draw(memText, 0, w_height-memText:getHeight())
     love.graphics.rectangle("fill", w_width - margin, 0, margin, margin)
     love.graphics.rectangle("line", GUI.origin.x, GUI.origin.y, GUI.size.x, GUI.size.y)
     love.graphics.setColor(white:normalized())
@@ -391,6 +403,18 @@ function UIDebugState.draw()
         end
     --]]
     end
+end
+
+function UIDebugState.clear()
+    click.start, click.stop = nil, nil
+    love.mousepressed = oldHandlers.mp
+    love.mousereleased = oldHandlers.mr
+    love.wheelmoved = oldHandlers.wm
+    love.keypressed = oldHandlers.kp
+    love.keyreleased = oldHandlers.kr
+    love.textinput = oldHandlers.ti
+    love.filedropped = oldHandlers.fd
+    love.directorydropped = oldHandlers.dd
 end
 
 return UIDebugState

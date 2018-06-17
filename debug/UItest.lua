@@ -6,6 +6,7 @@ local UI = require "UI/UI"
 local UIWidget = require "UI/UIWidget"
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
+local Typeassert = require "utils/Typeassert"
 
 local min, max = math.min, math.max
 
