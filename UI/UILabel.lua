@@ -14,19 +14,18 @@ end
 -- default:
 ---- UIWidget.style.*
 ---- UIWidget.flags.*
----- style.passThru = true
+---- flags.passThru = true
 ---- color is style.theme.hilit
-function UILabel.new(text, style, flags)
+function UILabel.new(text, style)
     Typeassert(text, "nil|string")
-    flags = flags or {}
-    flags.passThru = flags.passThru or true
-    local self = UIWidget(style, flags)
+    local self = UIWidget(style)
+    self.flags.passThru = true
 
     setmetatable(self, UILabel)
     self.wrappedText = {}
     self:setText(text)
     local tmt = getmetatable(self.style.theme)
-    tmt.__newindex = function(t, k, v) 
+    tmt.__newindex = function(t, k, v) -- on font change: trigger reload
         rawset(t, k, v)
         if (k == 'font') then self._layoutModified = true end
     end
@@ -66,7 +65,6 @@ function UILabel:renderer()
     love.graphics.setColor(self.style.theme.hilit:normalized())
     for lix, line in ipairs(self.wrappedText) do
         line = love.graphics.newText(self.style.theme.font, line)
-        --print(line:getWidth())
         love.graphics.draw(line, self:getRawCursor())
         totalHeight = totalHeight + line:getHeight()
         self:setCursor(0, totalHeight)

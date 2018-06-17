@@ -19,8 +19,10 @@ local red = Color("#ff1b2b")
 local click = {start = nil, stop = nil}
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
 ResourceManager.load("font.monospace12", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 12)
+ResourceManager.load("mage", "mage", "png", "resources", "image")
 font = ResourceManager.get("font.monospace24")
 font12 = ResourceManager.get("font.monospace12")
+mageimg = ResourceManager.get("mage")
 
 local stateDesc
 local w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
@@ -40,29 +42,31 @@ local f3 = UIWidget({ID = "f3", allign = {x = "right", y = "down"}, z = -1, size
 local f4 = UIWidget({ID = "f4", size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
 local f5 = UIWidget({ID = "f5", origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
 local progress = UIProgressBar({size = {y = 20}, origin = {y = -40}, showValue = true, format = "progress: %d%%"}, 30)
-local lore = UILabel("Dolor sit amet et amona magnificenti luna lua de la vista.", {theme = {font = font24}})
+local lore = UILabel("Dolor sit amet et amona magnificenti luna lua de la vista.", {ID='lore', theme = {font = font24}})
 local TEXT_1 = love.graphics.newText(font, "BTTN")
 local bttn =
     UIButton(
     "normal",
-    {ID = "BTTN", margin = {x = 15}, size = {x = "80%", y = TEXT_1:getHeight()}, allign = {x = "center"}},
+    {ID = "BTTN", margin = {x = 15}, size = {x = "80%", y = TEXT_1:getHeight()}},
     TEXT_1,
     function()
         print "CLICKED"
     end
 )
+print(bttn:getCallback())
+local imgbttn = UIButton("normal", {ID='imgbttn', size={x=mageimg:getWidth(), y=mageimg:getHeight()}, origin = {y = "10%"}}, mageimg, bttn:getCallback())
 bttn.buttonHeld = function(self, delta)
     print("HELD for " .. delta)
 end
-local delta = 1
 
+progress.delta = 1
 progress.updater = function(self, dt)
     if self.value == 120 then
-        delta = -1
+        self.delta = -1
     elseif self.value == -20 then
-        delta = 1
+        self.delta = 1
     end
-    self.value = self.value + delta
+    self.value = self.value + self.delta
 end
 ---
 
@@ -77,9 +81,9 @@ f3:addWidget(f4)
 f4:addWidget(f5)
 
 side:addWidget(lore)
-print(lore.style.size.x)
 side:addWidget(progress)
 side:addWidget(bttn)
+side:addWidget(imgbttn)
 
 local widgetRenderer = function(self)
     local original = {love.graphics.getColor()}
@@ -225,7 +229,6 @@ function UIDebugState.init()
     w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
 end
 
-
 f2.updater = function(self, dt)
     self.cntr = self.cntr or 0
     self.cntr = self.cntr + 1
@@ -258,7 +261,7 @@ f5.updater = function(self, dt)
 end
 
 lore.timeElapsed = 0
-lore.updater = function (self, dt)
+lore.updater = function(self, dt)
     lore.timeElapsed = lore.timeElapsed + dt
     if lore.timeElapsed > 2 then
         lore.timeElapsed = 0
@@ -312,10 +315,10 @@ local function drawAABB(AABB, c, n)
     love.graphics.setScissor(x, y, w, h)
 end
 
-local function drawCursor(cursor, text)
+local function drawCursor(x, y, text)
     love.graphics.setColor(white:normalized())
-    love.graphics.points(cursor.x, cursor.y)
-    love.graphics.print(text or "Cursor", cursor.x + 2, cursor.y + 2)
+    love.graphics.points(x, y)
+    love.graphics.print(text or "Cursor", x + 2, y + 2)
 end
 
 function UIDebugState.draw()
@@ -324,8 +327,8 @@ function UIDebugState.draw()
     love.graphics.draw(stateDesc, 0, 0)
     local mousePosText = love.graphics.newText(font, string.format("Mouse:\t(%d\t,%d)", love.mouse.getPosition()))
     love.graphics.draw(mousePosText, w_width - mousePosText:getWidth(), w_height - mousePosText:getHeight())
-    local memText = love.graphics.newText(font, string.format("Memory: %04d kB", collectgarbage('count')))
-    love.graphics.draw(memText, 0, w_height-memText:getHeight())
+    local memText = love.graphics.newText(font, string.format("Memory: %04d kB", collectgarbage("count")))
+    love.graphics.draw(memText, 0, w_height - memText:getHeight())
     love.graphics.rectangle("fill", w_width - margin, 0, margin, margin)
     love.graphics.rectangle("line", GUI.origin.x, GUI.origin.y, GUI.size.x, GUI.size.y)
     love.graphics.setColor(white:normalized())
@@ -366,40 +369,46 @@ function UIDebugState.draw()
     if love.keyboard.isDown("c") then
         if love.keyboard.isDown("0") then
             f0:setCursor(0, 0)
-            drawCursor(f0:getRawCursor(), " F0_cursor")
+            local x, y = f0:getRawCursor()
+            drawCursor(x, y, " F0_cursor")
             f0:setRawCursor(f0:getAvailAABB()[1])
-            drawCursor(f0:getRawCursor(), " F0_avail_cursor")
+            drawCursor(x, y, " F0_avail_cursor")
         end
         if love.keyboard.isDown("1") then
             f1:setCursor(0, 0)
-            drawCursor(f1:getRawCursor(), " F1_cursor")
+            local x, y = f1:getRawCursor()
+            drawCursor(x, y, " F1_cursor")
             f1:setRawCursor(f1:getAvailAABB()[1])
-            drawCursor(f1:getRawCursor(), " F1_avail_cursor")
+            drawCursor(x, y, " F1_avail_cursor")
         end
         if love.keyboard.isDown("2") then
             f2:setCursor(0, 0)
-            drawCursor(f2:getRawCursor(), " F2_cursor")
+            local x, y = f2:getRawCursor()
+            drawCursor(x, y, " F2_cursor")
             f2:setRawCursor(f2:getAvailAABB()[1])
-            drawCursor(f2:getRawCursor(), " F2_avail_cursor")
+            drawCursor(x, y, " F2_avail_cursor")
         end
         ---[[
         if love.keyboard.isDown("3") then
             f3:setCursor(0, 0)
-            drawCursor(f3:getRawCursor(), " F3_cursor")
+            local x, y = f3:getRawCursor()
+            drawCursor(x, y, " F3_cursor")
             f3:setRawCursor(f3:getAvailAABB()[1])
-            drawCursor(f3:getRawCursor(), " F3_avail_cursor")
+            drawCursor(x, y, " F3_avail_cursor")
         end
         if love.keyboard.isDown("4") then
             f4:setCursor(0, 0)
-            drawCursor(f4:getRawCursor(), " F4_cursor")
+            local x, y = f4:getRawCursor()
+            drawCursor(x, y, " F4_cursor")
             f4:setRawCursor(f4:getAvailAABB()[1])
-            drawCursor(f4:getRawCursor(), " F4_avail_cursor")
+            drawCursor(x, y, " F4_avail_cursor")
         end
         if love.keyboard.isDown("5") then
             f5:setCursor(0, 0)
-            drawCursor(f5:getRawCursor(), " F5_cursor")
+            local x, y = f5:getRawCursor()
+            drawCursor(x, y, " F5_cursor")
             f5:setRawCursor(f5:getAvailAABB()[1])
-            drawCursor(f5:getRawCursor(), " F5_avail_cursor")
+            drawCursor(x, y, " F5_avail_cursor")
         end
     --]]
     end

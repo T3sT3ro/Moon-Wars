@@ -282,12 +282,16 @@ function UIWidget.new(style, flags)
         {},
         {
             __index = function(t, k) -- returns value from _
-                local code =
-                    ({bg = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5, contrast = 6, font = "font"})[k]
-                if type(code) == "number" then
-                    return (code and self._UI and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
-                elseif code == 'font' then
-                    return (code and self._UI and self._UI.theme[code]) or love.graphics.newFont(10)
+                local val = rawget(t, k)
+                if val then
+                    return val
+                end
+                local theme =
+                    (self._parent and self._parent ~= self and self._parent.style.theme) or (self._UI and self._UI.theme)
+                if k == "font" then
+                    return (k and self._UI and theme[k]) or love.graphics.newFont(10)
+                else
+                    return (k and self._UI and Color(theme[k])) or Color(0, 0, 0) -- default is black
                 end
             end
         }

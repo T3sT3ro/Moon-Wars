@@ -17,13 +17,13 @@ end
 ---- flags.passThru = true
 ---- flags.invisible = true iff displayMode not set
 ---- style.displayMode = '[bf]': [b]order [f]ill
-function UIFrame.new(style, flags)
-    Typeassert({style, flags}, {{"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}}, "table|nil"})
-    style, flags = style or {}, flags or {}
+function UIFrame.new(style)
+    Typeassert(style, {"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}})
+    style = style or {}
 
-    flags.passThru = flags.passThru or true
-    flags.invisible = not style.displayMode
-    local self = UIWidget(style, flags)
+    local self = UIWidget(style)
+    self.flags.passThru = true
+    self.flags.invisible = not style.displayMode
 
     self.style.displayMode = style.displayMode or ""
     return setmetatable(self, UIFrame) -- ok since UIFrame's index is UIWidget

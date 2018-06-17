@@ -10,12 +10,12 @@ local Color = require "UI/Color"
 UI.__index = UI
 
 UI.theme = {
-    [1] = Color("#63002dbb"),
-    [2] = Color("#8b003fbb"),
-    [3] = Color("#c1404dbb"),
-    [4] = Color("#ffa535bb"),
-    [5] = Color("#ffcd32bb"),
-    [6] = Color("#a8f9ff"),
+    bg = Color("#63002dbb"),
+    fg = Color("#8b003fbb"),
+    fg_focus = Color("#c1404dbb"),
+    hilit = Color("#ffa535bb"),
+    hilit_focus = Color("#ffcd32bb"),
+    contrast = Color("#a8f9ff"),
     font = love.graphics.newFont(14)
 }
 

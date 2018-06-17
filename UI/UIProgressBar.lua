@@ -20,7 +20,7 @@ end
 ---- value=[minValue-maxValue]
 ---- min=0
 ---- max=100
----- style.color.<primary|secondary|lore>=style.theme.<hilit|bg|red>
+---- style.theme.<primary=hilit|secondary=bg|lore=contrast>
 ---- style.showValue=false
 ---- style.format="%d"
 ---- orientation='x|y'
@@ -36,7 +36,7 @@ function UIProgressBar.new(style, value, minV, maxV)
                 "ANY",
                 "nil",
                 {
-                    color = {
+                    theme = {
                         "ANY",
                         "nil",
                         {
@@ -59,19 +59,6 @@ function UIProgressBar.new(style, value, minV, maxV)
     self.min = minV or 0
     self.max = maxV or 100
 
-    self.style.color =
-        setmetatable(
-        {},
-        {
-            _primary, -- filled progress bar color
-            _secondary, -- not filled progress bar color
-            _lore, -- displayed value color
-            __index = function(t, k)
-                local code = ({primary = 4, secondary = 1, lore = 6})[k]
-                return (code and self._UI and Color(self._UI.theme[code])) or Color("#ffffff") -- default is black
-            end
-        }
-    )
     self.style.showValue = style.showValue or false
     self.style.orientation = style.orientation or "x"
     self.style.format = style.format or "%d"
@@ -80,8 +67,14 @@ function UIProgressBar.new(style, value, minV, maxV)
     return self
 end
 
+function UIProgressBar:reload() 
+    self.style.theme.primary = Color(self.style.theme.hilit)
+    self.style.theme.secondary = Color(self.style.theme.bg)
+    self.style.theme.lore = Color(self.style.theme.contrast)
+end
+
 function UIProgressBar:renderer()
-    love.graphics.setColor(self.style.color.secondary:normalized())
+    love.graphics.setColor(self.style.theme.secondary:normalized())
     local aabb = self:getAABB()
     love.graphics.rectangle("fill", aabb:normalized())
     local value = min(max(self.value, self.min), self.max)
@@ -91,10 +84,10 @@ function UIProgressBar:renderer()
     else
         aabb:contract("up", floor(aabb:getHeight() * (100 - valueP) / 100))
     end
-    love.graphics.setColor(self.style.color.primary:normalized())
+    love.graphics.setColor(self.style.theme.primary:normalized())
     love.graphics.rectangle("fill", aabb:normalized())
     if self.style.showValue then
-        love.graphics.setColor(self.style.color.lore:normalized())
+        love.graphics.setColor(self.style.theme.lore:normalized())
         local text = love.graphics.newText(love.graphics.newFont(10), string.format(self.style.format, value))
         local ox, oy =
             floor((self:getAABB()[1].x + self:getAABB()[2].x) / 2),
