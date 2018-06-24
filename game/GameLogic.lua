@@ -165,6 +165,7 @@ local function endTurn()
         iterations = iterations + 1
     end
     _curUnit.isCurUnit = true
+    _curActionPoints = _startActionPoints
 
     if iterations == stopVal then
         endGame(prevPlayer)
