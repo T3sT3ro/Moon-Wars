@@ -21,9 +21,10 @@ function love.load()
             msaa = 16,
             fullscreen = false,
             resizable = true,
-            fullscreentype = "desktop"
+            fullscreentype = "desktop",
         }
     )
+    love.window.setTitle("MoonAge")
 
     StateManager.load(MainMenuState.name)
 end

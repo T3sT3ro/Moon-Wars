@@ -1,6 +1,8 @@
+local GameLogic = require "game/GameLogic"
+
 local ResourceManager = {}
 local _assets = {}
-local _patterns = {image = {"png", "jpg", "bmp"}, font = {"ttf", "fnt"}, script = {"lua"}, AI = {"AI.lua"}}
+local _patterns = {image = {"png", "jpg", "bmp"}, font = {"ttf", "fnt"}, AI = {"lua"}}
 
 function ResourceManager.init(resourcesFolderPath)
     ResourceManager.loadDir(resourcesFolderPath)
@@ -35,6 +37,13 @@ function ResourceManager.clear()
     _assets = {}
 end
 
+local function encapsuledPrint(assetName)
+    return 
+        function(...)
+            print(assetName .. ": " .. tostring(...))
+        end
+end
+
 function ResourceManager.load(assetName, fname, fext, fpath, type, ...)
     fpath = fpath or ""
     local path = fpath .. "/" .. fname .. "." .. fext
@@ -46,15 +55,10 @@ function ResourceManager.load(assetName, fname, fext, fpath, type, ...)
         isOK, asset = pcall(love.graphics.newImage, path, ...)
     elseif type == "font" then -- fonts with size as optional argument (defaults to 12)
         isOK, asset = pcall(love.graphics.newFont, path, ...)
-    elseif type == "script" then -- FIXME: same as AI but without sandboxing
-    elseif type == "AI" then -- FIXME: @Bartosz Rudzki
-        local file = loadfile(path, "bt", {print = print})
+    elseif type == "AI" then
+        local file = loadfile(path, "bt", {print = encapsuledPrint(assetName), doAction = GameLogic.doAction})
          -- loading with specified enviroment
-        isOk, asset = pcall(file) -- calling script
-        if not isOk then
-            print("ResourceManager: script loading error: " .. tostring(ret))
-            return
-        end
+        isOK, asset = pcall(file) -- calling script
     end
 
     if isOK then

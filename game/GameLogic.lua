@@ -7,6 +7,7 @@ local StateManager = require "StateManager"
 
 local GameLogic = {}
 
+local _AI = {}
 local _curPlayer = nil
 local _curUnitIdx = nil
 local _unitsInOrder = {{},{}}
@@ -74,7 +75,21 @@ local function startNewRound()
 
 end
 
-function GameLogic.init()
+local function checkAIMove()
+    local prevPlayer = _curPlayer
+    if _AI[_curPlayer] then
+        local isOk = pcall(_AI[_curPlayer].makeMove, _curUnit, GameLogic, map)
+        if not isOk then
+            print("AI for player: " .. _curPlayer .. " crashed!")
+            if prevPlayer == _curPlayer then
+                GameLogic.doAction("endTurn")
+            end
+        end
+    end
+end
+
+function GameLogic.init(player1AI, player2AI)
+    _AI = {player1AI, player2AI}
     local initActors = { createInitNeutralActors(0), createInitActors(1), createInitActors(2) }
     map.addInitActors(initActors)
 
@@ -88,26 +103,15 @@ function GameLogic.init()
     _curUnitIdx = {1, 1}
     _curUnit = _unitsInOrder[1][1]
     _curUnit.isCurUnit = true
-
+    
     startNewRound()
+    checkAIMove()
 end
 
 function GameLogic.clear()
     _actors = {}
     _unitsInOrder = {{},{}}
     _curUnit = nil
-end
-
-function GameLogic.doAction(actionName, ...)
-    local action = helper.actions[actionName]
-    if  action == nil or 
-        not helper.checkArgs(action.argsTypes, ...) or 
-        action.neededPoints > _curActionPoints then
-            return false
-    end
-
-    _curActionPoints = _curActionPoints - action.neededPoints
-    return action.callback(...)
 end
 
 local function endGame(winnerId)
@@ -129,6 +133,18 @@ local function nextUnit(playerId)
     return _unitsInOrder[playerId][curIdx]
 end
 
+function GameLogic.doAction(actionName, ...)
+    local action = helper.actions[actionName]
+    if  action == nil or 
+        not helper.checkArgs(action.argsTypes, ...) or 
+        action.neededPoints > _curActionPoints then
+            return false
+    end
+
+    _curActionPoints = _curActionPoints - action.neededPoints
+    return action.callback(...)
+end
+
 local function endTurn()
     print("turn ended")
     
@@ -147,9 +163,11 @@ local function endTurn()
         iterations = iterations + 1
     end
     _curUnit.isCurUnit = true
-    
+
     if iterations == stopVal then
         endGame(prevPlayer)
+    else
+        checkAIMove()
     end
 end
 helper.addAction("endTurn", endTurn, {}, 0)

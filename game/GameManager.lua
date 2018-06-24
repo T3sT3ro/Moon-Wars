@@ -7,7 +7,7 @@ local GameManager = {}
 
 function GameManager.init()
     map.init()
-    logic.init()
+    logic.init(ResourceManager.get("AI.example"))
 end
 
 function GameManager.clear()

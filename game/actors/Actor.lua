@@ -1,4 +1,3 @@
-local RM = require "ResourceManager"
 local Items = require "game/actors/Items"
 local Resources = require "game/actors/Resources"
 
@@ -25,9 +24,9 @@ function Actor:init(playerId, config)
     self.playerId = playerId
     self.name = config.name
     if config.assetName then
-        self.asset = RM.get(config.assetName)
+        self.asset = ResourceManager.get(config.assetName)
     else
-        self.asset = RM.get(config.name)
+        self.asset = ResourceManager.get(config.name)
     end
 end
 

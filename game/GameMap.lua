@@ -1,4 +1,3 @@
-local RM = require "ResourceManager"
 local AI = require "game/MapAI"
 local abs = math.abs
 local GameMap = {}
@@ -188,7 +187,7 @@ function GameMap.draw(offsetX,offsetY)
     --love.graphics.setColor(1,1,1,1)
     for i=1,20 do
         for j=1,20 do
-            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32 - offsetX, j*32-offsetY,0,0.5,0.5)
+            love.graphics.draw(ResourceManager.get(mapType[map[i][j].type]), i*32 - offsetX, j*32-offsetY,0,0.5,0.5)
             for _,v in pairs(map[i][j].actors) do
                 if v.type ~= "Unit" and v.type ~= "Item" then v:draw(offsetX,offsetY) break end
             end
