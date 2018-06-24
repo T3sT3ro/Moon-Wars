@@ -56,7 +56,10 @@ function ResourceManager.load(assetName, fname, fext, fpath, type, ...)
     elseif type == "font" then -- fonts with size as optional argument (defaults to 12)
         isOK, asset = pcall(love.graphics.newFont, path, ...)
     elseif type == "AI" then
-        local file = loadfile(path, "bt", {print = encapsuledPrint(assetName), doAction = GameLogic.doAction})
+        local file = loadfile(path, "bt", 
+            {print = encapsuledPrint(assetName), 
+            table = table, ipairs = ipairs, pairs = pairs,
+            doAction = GameLogic.doAction})
          -- loading with specified enviroment
         isOK, asset = pcall(file) -- calling script
     end

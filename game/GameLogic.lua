@@ -78,9 +78,11 @@ end
 local function checkAIMove()
     local prevPlayer = _curPlayer
     if _AI[_curPlayer] then
-        local isOk = pcall(_AI[_curPlayer].makeMove, _curUnit, GameLogic, map)
+        local isOk
+        local res
+        isOk, res = pcall(_AI[_curPlayer].makeMove, _curUnit, GameLogic, map)
         if not isOk then
-            print("AI for player: " .. _curPlayer .. " crashed!")
+            print("AI for player: " .. _curPlayer .. " crashed! Reason: " .. res)
             if prevPlayer == _curPlayer then
                 GameLogic.doAction("endTurn")
             end
