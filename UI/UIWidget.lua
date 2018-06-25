@@ -287,7 +287,8 @@ function UIWidget.new(style, flags)
                     return val
                 end
                 local theme =
-                    (self._parent and self._parent ~= self and self._parent.style.theme) or (self._UI and self._UI.theme)
+                    (self._parent and self._parent ~= self and self._parent.style.theme) or
+                    (self._UI and self._UI.theme)
                 if k == "font" then
                     return (k and self._UI and theme[k]) or love.graphics.newFont(10)
                 else
@@ -360,10 +361,12 @@ function UIWidget:draw(...)
             self:renderer(...)
         end
         for _, v in ipairs(self._childrenByZ) do
+            love.graphics.push("all")
             -- TODO: allow overflow flag implementation as set scissors to parent
             love.graphics.setScissor(v._visibleAvailAABB:cut(v._AABB):normalized())
-            v:setCursor(0, 0)
+            love.graphics.translate(v._AABB[1].x - self._AABB[1].x, v._AABB[1].y - self._AABB[1].y)
             v:draw(...)
+            love.graphics.pop()
         end
     end
 end
@@ -542,35 +545,6 @@ function UIWidget:getWidth()
     return self.style.size.x
 end
 
--- cursor relative to self
-function UIWidget:getCursor()
-    if self._UI then
-        local cx, cy = self._UI:getRawCursor()
-        return cx - self._AABB[1].x, cy - self._AABB[1].y
-    else
-        return nil
-    end
-end
-
--- proxy to parent
-function UIWidget:getRawCursor()
-    if self._UI then
-        return self._UI:getRawCursor()
-    else
-        return nil
-    end
-end
-
--- proxy to parent
-function UIWidget:setRawCursor(x, y)
-    return self._UI and self._UI:setRawCursor(x, y)
-end
-
--- sets cursor relative to this elements requested AABB corner
-function UIWidget:setCursor(x, y)
-    return self._UI and self._UI:setRawCursor(self._AABB[1].x + x, self._AABB[1].y + y)
-end
-
 -- proxy function for setting avail AABB and triggering UI reload
 function UIWidget:setAvailAABB(x1, y1, x2, y2)
     self._availAABB:set(x1, y1, x2, y2)
@@ -711,7 +685,7 @@ function UIWidget:mousePressedProxy(x, y, button)
 end
 function UIWidget:mouseReleasedProxy(x, y, button)
 end
-function UIWidget:wheelMovedProxy(x, y, button)
+function UIWidget:wheelMovedProxy(x, y)
 end
 function UIWidget:keyPressedProxy(key, scancode, isRepeat)
 end

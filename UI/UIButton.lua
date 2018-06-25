@@ -66,7 +66,7 @@ function UIButton:setContent(content, contentAllign)
         self.contentFrame.drawable = content
         self.contentFrame.renderer = function(self, ...)
             love.graphics.setColor(self.style.theme.content:normalized())
-            love.graphics.draw(self.drawable, self:getRawCursor())
+            love.graphics.draw(self.drawable, 0, 0)
         end
     else
         self.contentFrame.flags.hidden = true
@@ -74,7 +74,7 @@ function UIButton:setContent(content, contentAllign)
     end
 end
 
-function UIButton:getCallback() 
+function UIButton:getCallback()
     return self.buttonClicked
 end
 
@@ -94,14 +94,12 @@ function UIButton:mouseReleased(x, y, button)
             end
             self:buttonClicked() -- emit event
         end
-        self.pressed = false
         self.clickDuration = 0
         self:dropFocus()
     end
 end
 
 function UIButton:requestDropFocus()
-    self.pressed = false
     self.clickDuration = 0
     self:dropFocus()
 end
@@ -128,7 +126,7 @@ end
 
 function UIButton:renderer()
     love.graphics.setColor(self.style.theme.body:normalized())
-    love.graphics.rectangle("fill", self:getAABB():normalized())
+    love.graphics.rectangle("fill", 0, 0, self:getWidth(), self:getHeight())
 end
 
 function UIButton:getClickDuration()

@@ -1,4 +1,5 @@
 local UILabel = {}
+package.loaded[...] = UIScrollPane
 
 local UIWidget = require "UI/UIWidget"
 local UIFrame = require "UI/UIFrame"
@@ -34,10 +35,6 @@ end
 
 function UILabel:setText(text)
     text = text or ""
-    if text == self.text and not self._layoutModified then
-        return
-    end
-
     self.text = text
     local _, wrappedText = self.style.theme.font:getWrap(text, self.style.size.x)
     self.wrappedText = wrappedText
@@ -45,7 +42,7 @@ function UILabel:setText(text)
 end
 
 function UILabel:reloadLayoutSelf(doReload)
-    if not self.flags.hidden and doReload or self._layoutModified then
+    if not (self.flags.hidden and doReload) or self._layoutModified then
         UIWidget.reloadLayoutSelf(self)
         self:setText(self.text)
         self._layoutModified = false
@@ -60,14 +57,12 @@ function UILabel:getText()
 end
 
 function UILabel:renderer()
-    self:setCursor(0, 0)
     local totalHeight = 0
     love.graphics.setColor(self.style.theme.hilit:normalized())
     for lix, line in ipairs(self.wrappedText) do
         line = love.graphics.newText(self.style.theme.font, line)
-        love.graphics.draw(line, self:getRawCursor())
+        love.graphics.draw(line, 0, totalHeight)
         totalHeight = totalHeight + line:getHeight()
-        self:setCursor(0, totalHeight)
     end
 end
 

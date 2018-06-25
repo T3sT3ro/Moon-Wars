@@ -32,11 +32,11 @@ end
 function UIFrame:renderer()
     if string.match(self.style.displayMode, "f") then
         love.graphics.setColor(self.style.theme.bg:normalized())
-        love.graphics.rectangle("fill", self:getAABB():normalized())
+        love.graphics.rectangle("fill", 0, 0, self:getWidth(), self:getHeight())
     end
     if string.match(self.style.displayMode, "b") then
         love.graphics.setColor(self.style.theme.fg:normalized())
-        love.graphics.rectangle("line", self:getAABB():normalized())
+        love.graphics.rectangle("line", 0, 0, self:getWidth(), self:getHeight())
     end
 end
 

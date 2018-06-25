@@ -34,7 +34,7 @@ end
 
 -- fields:
 --- ID, _index, _widget, _hoveredWidget, _focusedWidget, _clickBegin, _clickEnd
----  origin, size, cursor
+---  origin, size
 function UI.new(x, y, width, height)
     local naturalPred = function(x)
         return type(x) == "number" and x >= 0
@@ -53,7 +53,6 @@ function UI.new(x, y, width, height)
             _clickEnd = {{}, {}, {}},
             origin = {x = x, y = y}, -- on screen real dimensions
             size = {x = width, y = height}, --- ^^^
-            cursor = {x = x, y = y} -- relative to window's top-left corner, used for drawing UI elements
         },
         UI
     )
@@ -86,7 +85,6 @@ end
 
 function UI:draw(...)
     love.graphics.push("all")
-    local old = {love.graphics.getScissor()}
     love.graphics.setScissor(self.origin.x, self.origin.y, self.size.x, self.size.y)
     local oldSetScissorFun = love.graphics.setScissor
 
@@ -95,15 +93,13 @@ function UI:draw(...)
         oldSetScissorFun(self.origin.x, self.origin.y, self.size.x, self.size.y)
         return x and y and w and h and love.graphics.intersectScissor(x, y, w, h)
     end
-    self:setRawCursor(self.origin.x, self.origin.y)
+    love.graphics.translate(self.origin.x, self.origin.y)
     self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
-    love.graphics.setScissor(old[1], old[2], old[3], old[4])
     love.graphics.pop()
 end
 
 function UI:reload()
-    self.cursor.x, self.cursor.y = self.origin.x, self.origin.y
     self:resize(self.origin.x, self.origin.y, self.size.x, self.size.y) -- resize with the same values triggers widget update
     self._hoveredWidget = nil
     self._focusedWidget = nil
@@ -183,14 +179,6 @@ function UI:getRelativeMouse()
     return mx, my
 end
 
-function UI:getRawCursor()
-    return self.cursor.x, self.cursor.y
-end
-
-function UI:setRawCursor(x, y)
-    self.cursor.x, self.cursor.y = x, y
-end
-
 -- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
 function UI:getWidgetAt(x, y, solid)
     return self._widget and self._widget:getWidgetAt(x, y, solid)
@@ -212,7 +200,7 @@ local function mousePressedEvt(ui, x, y, button)
     if widget then
         if widget ~= ui._focusedWidget then
             if ui._focusedWidget then
-                ui._focusedWidget:dropFocus()
+                ui._focusedWidget:requestDropFocus()
             end
         end
         widget:getProxyEvent("mousePressed")(x, y, button)
