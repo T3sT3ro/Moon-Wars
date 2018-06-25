@@ -86,8 +86,14 @@ function Unit:die()
 end
 
 function Unit:draw(offsetX,offsetY)
-    Actor.draw(self,offsetX,offsetY)
+    if self.isCurUnit then
+        love.graphics.setColor(1, 1, 0, 1)
+    end
+    Actor.draw(self,offsetX,offsetY)    
     love.graphics.print(self.health, self.x*32-offsetX, self.y*32-offsetY)
+    if self.isCurUnit then
+        love.graphics.setColor(1, 1, 1, 1)
+    end
 end
 
 function Unit:debugInfo()

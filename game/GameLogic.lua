@@ -87,6 +87,7 @@ function GameLogic.init()
     _curPlayer = 1
     _curUnitIdx = {1, 1}
     _curUnit = _unitsInOrder[1][1]
+    _curUnit.isCurUnit = true
 
     startNewRound()
 end
@@ -137,6 +138,7 @@ local function endTurn()
         _curPlayer = 1 
     end
 
+    _curUnit.isCurUnit = false
     _curUnit = nextUnit(_curPlayer)
     local iterations = 0
     local stopVal = #_unitsInOrder[_curPlayer]
@@ -144,7 +146,8 @@ local function endTurn()
         _curUnit = nextUnit(_curPlayer)
         iterations = iterations + 1
     end
-
+    _curUnit.isCurUnit = true
+    
     if iterations == stopVal then
         endGame(prevPlayer)
     end
