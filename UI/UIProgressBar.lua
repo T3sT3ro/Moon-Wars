@@ -80,9 +80,9 @@ function UIProgressBar:renderer()
     local valueP = 100 * (value - self.min) / (self.max - self.min) -- normalized to [0-100]
     local fillWidth, fillHeight = self:getWidth(), self:getHeight()
     if self.style.orientation == "x" then
-        fillWidth = floor(fillWidth * (100 - valueP) / 100)
+        fillWidth = fillWidth * (100 - valueP) / 100
     else
-        fillHeight = floor(fillHeight * (100 - valueP) / 100)
+        fillHeight = fillHeight * (100 - valueP) / 100
     end
     love.graphics.setColor(self.style.theme.primary:normalized())
     love.graphics.rectangle("fill", 0, self:getHeight() - fillHeight, fillWidth, fillHeight)
