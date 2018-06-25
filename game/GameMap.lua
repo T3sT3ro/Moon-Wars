@@ -62,9 +62,14 @@ local function check()
     return false
 end
 
-function GameMap.init(MapAIPath)
-    if MapAIPath ~= nil then 
-        AI = require(MapAIPath)
+local function file_exists(name)
+    local f=io.open(name,"r")
+    if f~=nil then io.close(f) return true else return false end
+ end
+
+function GameMap.init()
+    if file_exists("resources/MapGenerator.lua") then 
+        AI = require("resources/MapGenerator")
     end
     --[[for i=1,20 do
         map[i] = {}
