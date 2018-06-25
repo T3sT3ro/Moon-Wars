@@ -70,6 +70,7 @@ local function file_exists(name)
 function GameMap.init()
     if file_exists("resources/MapGenerator.lua") then 
         AI = require("resources/MapGenerator")
+    else AI.gen()
     end
     --[[for i=1,20 do
         map[i] = {}

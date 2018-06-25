@@ -76,7 +76,7 @@ for i=1,10 do
     end
 end
 
-local cnt = rng (3) + 2
+local cnt = rng (4) + 3
 
 for i=1,cnt do
     local x = rng(8)
@@ -164,8 +164,9 @@ function MapAI.getMine()
     return res.mine    
 end
 
-gen()
-
-while not check() do gen() end
+function MapAI.gen()
+    gen()
+    while not check() do gen() end
+end
 
 return MapAI
