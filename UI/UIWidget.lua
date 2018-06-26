@@ -529,16 +529,12 @@ end
 
 -- copy of style.origin
 function UIWidget:getOrigin()
-<<<<<<< HEAD
-    return self.style.origin.x,self.style.origin.y
-=======
     return self.style.origin.x, self.style.origin.y
 end
 
 -- returns x, y of self upper left corner
 function UIWidget:getScreenOrigin()
     return self._AABB[1].x, self._AABB[1].y
->>>>>>> origin/feature/UI
 end
 
 --* syntactic sugar

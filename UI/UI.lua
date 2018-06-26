@@ -83,10 +83,6 @@ end
 
 function UI:draw(...)
     love.graphics.push("all")
-<<<<<<< HEAD
-    local old = {love.graphics.getScissor()}
-=======
->>>>>>> origin/feature/UI
     love.graphics.setScissor(self.origin.x, self.origin.y, self.size.x, self.size.y)
     local oldSetScissorFun = love.graphics.setScissor
 
@@ -98,10 +94,6 @@ function UI:draw(...)
     love.graphics.translate(self.origin.x, self.origin.y)
     self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
-<<<<<<< HEAD
-    love.graphics.setScissor(old[1], old[2], old[3], old[4])
-=======
->>>>>>> origin/feature/UI
     love.graphics.pop()
 end
 
