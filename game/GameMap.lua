@@ -2,7 +2,8 @@ local RM = require "ResourceManager"
 local AI = require "game/MapAI"
 local abs = math.abs
 local GameMap = {}
-
+math.randomseed(os.time())
+local function rng(x) return math.random(x) end
 local map = {}
 
 local nex = {}
@@ -11,7 +12,7 @@ local res = {}
 res[1] = {}
 res[2] = {}
 
-local mapType = {"grass","stone_tile","water"}
+local mapType = {"grass1","grass2","grass_flower2","grass_flower1","stone_tile","water"}
 --[[
     map types:
     1 - grass
@@ -98,6 +99,21 @@ function GameMap.init()
         end
     end
 
+    for i=1,20 do
+        for j = 1,20 do
+            local tex = map[i][j].type
+            if tex == 1 then 
+                tex = rng(20) 
+                if tex < 8 then tex = 1 
+                elseif tex < 16 then tex = 2
+                elseif tex < 18 then tex = 3
+                else tex = 4
+                end
+            else tex = tex + 3
+            end
+            map[i][j].tex = tex
+        end
+    end
     --[[
         nex.x,nex.y = 6,5
         res[1].tree = {{x = 1, y = 1},{x = 2 , y = 15},{x = 9, y = 11}}
@@ -194,7 +210,7 @@ function GameMap.draw(offsetX,offsetY)
     --love.graphics.setColor(1,1,1,1)
     for i=1,20 do
         for j=1,20 do
-            love.graphics.draw(RM.get(mapType[map[i][j].type]), i*32 - offsetX, j*32-offsetY,0,0.5,0.5)
+            love.graphics.draw(RM.get(mapType[map[i][j].tex]), i*32 - offsetX, j*32-offsetY,0,0.5,0.5)
             for _,v in pairs(map[i][j].actors) do
                 if v.type ~= "Unit" and v.type ~= "Item" then v:draw(offsetX,offsetY) break end
             end
