@@ -1,11 +1,14 @@
 local UIDebugState = {name = "UIDebugState"}
 
+local min, max, floor = math.min, math.max, math.floor
+
 local UI = require "UI/UI"
 local UIWidget = require "UI/UIWidget"
 local UIFrame = require "UI/UIFrame"
 local UIButton = require "UI/UIButton"
 local UIProgressBar = require "UI/UIProgressBar"
 local UILabel = require "UI/UILabel"
+local UIScrollPane = require "UI/UIScrollPane"
 
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
@@ -30,19 +33,28 @@ local margin = 30
 
 --- CONF
 local printEvents = false
-local printProxyEvents = false
 local GUI = UI(margin, margin, w_width - 2 * margin, w_height - 2 * margin)
 local mainframe = UIFrame({ID = "mainframe", allign = {x = "left"}})
-local side = UIFrame({ID = "side", size = {x = "20%"}, allign = {x = "right"}, displayMode = "bf"})
+local side =
+    UIFrame(
+    {ID = "side", margin = {all = 5}, size = {x = "20%"}, allign = {x = "right"}, invisible = false, displayMode = "bf"}
+)
 local body = UIFrame({ID = "body", size = {x = "80%"}, allign = {x = "left"}})
+local scroll = UIScrollPane({ID = "scroll", virtualSize={x="120%", y="120%"}, margin={all=50}}, {scroll={x=true}, scrollInfinite=false})
+local scrollLabel = UILabel("scroll me", {ID="scrollMeText"})
 local f0 = UIWidget({ID = "f0", size = {x = "80%", y = "80%"}, margin = {all = 30}})
 local f1 = UIWidget({ID = "f1", size = {x = "80%", y = "80%"}, margin = {all = 30}})
 local f2 = UIWidget({ID = "f2", allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
 local f3 = UIWidget({ID = "f3", allign = {x = "right", y = "down"}, z = -1, size = {x = "50%", y = "80%"}})
 local f4 = UIWidget({ID = "f4", size = {x = "80%", y = "80%"}}, {passThru = true, allowOverflow = true})
 local f5 = UIWidget({ID = "f5", origin = {x = "20%", y = "0%"}, size = {x = "50%", y = "50%"}})
-local progress = UIProgressBar({size = {y = 20}, origin = {y = -40}, showValue = true, format = "progress: %d%%"}, 30)
-local lore = UILabel("Dolor sit amet et amona magnificenti luna lua de la vista.", {ID='lore', theme = {font = font24}})
+local progress =
+    UIProgressBar(
+    {size = {y = 20}, origin = {y = -40}, direction = "x", showValue = true, format = "progress: %d%%"},
+    30
+)
+local lore =
+    UILabel("Dolor sit amet et amona magnificenti luna lua de la vista.", {ID = "lore", theme = {font = font24}})
 local TEXT_1 = love.graphics.newText(font, "BTTN")
 local bttn =
     UIButton(
@@ -53,8 +65,13 @@ local bttn =
         print "CLICKED"
     end
 )
-print(bttn:getCallback())
-local imgbttn = UIButton("normal", {ID='imgbttn', size={x=mageimg:getWidth(), y=mageimg:getHeight()}, origin = {y = "10%"}}, mageimg, bttn:getCallback())
+local imgbttn =
+    UIButton(
+    "normal",
+    {ID = "imgbttn", size = {x = mageimg:getWidth(), y = mageimg:getHeight()}, origin = {y = "10%"}},
+    mageimg,
+    bttn:getCallback()
+)
 bttn.buttonHeld = function(self, delta)
     print("HELD for " .. delta)
 end
@@ -73,7 +90,9 @@ end
 GUI:setWidget(mainframe)
 mainframe:addWidget(body)
 mainframe:addWidget(side)
-body:addWidget(f0)
+body:addWidget(scroll)
+scroll:addWidget(f0)
+scroll:addWidget(scrollLabel)
 f0:addWidget(f1)
 f1:addWidget(f2)
 f1:addWidget(f3)
@@ -86,7 +105,6 @@ side:addWidget(bttn)
 side:addWidget(imgbttn)
 
 local widgetRenderer = function(self)
-    local original = {love.graphics.getColor()}
     if self:isFocused() then
         love.graphics.setColor(self.style.theme.fg_focus:normalized())
     elseif self:isHovered() then
@@ -94,17 +112,15 @@ local widgetRenderer = function(self)
     else
         love.graphics.setColor(self.style.theme.bg:normalized())
     end
-    love.graphics.rectangle("fill", self:getAABB():normalized())
-    love.graphics.setColor(red:normalized())
-    love.graphics.rectangle("line", self:getAABB():normalized())
-    love.graphics.setColor(white:normalized())
-    love.graphics.print(self.style.ID, self._AABB[1].x, self._AABB[1].y)
-    if self.info then
-        local cx, cy = self:getRawCursor()
-        love.graphics.print(self.info, cx + 14, cy)
-    end
 
-    love.graphics.setColor(original[1], original[2], original[3], original[4])
+    love.graphics.rectangle("fill", 0, 0, self:getWidth(), self:getHeight())
+    love.graphics.setColor(red:normalized())
+    love.graphics.rectangle("line", 0, 0, self:getWidth(), self:getHeight())
+    love.graphics.setColor(white:normalized())
+    love.graphics.print(self.style.ID, 0, 0)
+    if self.info then
+        love.graphics.print(self.info, 14, 0)
+    end
 end
 
 f0.renderer, f0.info = widgetRenderer, "main widget"
@@ -128,7 +144,8 @@ local function _EVTmr(self, x, y, button)
     return printEvents and print("EVT: mr", self.style.ID, x, y, button)
 end
 local function _EVTwm(self, x, y)
-    return printEvents and print("EVT: wm", self.style.ID, x, y)
+    local _ = printEvents and print("EVT: wm", self.style.ID, x, y)
+    return true
 end
 local function _EVTkp(self, key, scancode, isRepeat)
     return printEvents and print("EVT: kp", self.style.ID, key, scancode, isRepeat)
@@ -145,35 +162,8 @@ end
 local function _EVTdd(self, path)
     return printEvents and print("EVT: dd", self.style.ID, path)
 end
-local function _EVTmeProxy(self)
-    return printProxyEvents and print("EPX_: me", self.style.ID)
-end
-local function _EVTmxProxy(self)
-    return printProxyEvents and print("EPX_: mx", self.style.ID)
-end
-local function _EVTmcProxy(self, x, y, button)
-    return self:requestFocus() and printProxyEvents and print("EPX_: mc", self.style.ID, x, y, button)
-end
-local function _EVTmrProxy(self, x, y, button)
-    return printProxyEvents and print("EPX_: mr", self.style.ID, x, y, button)
-end
-local function _EVTwmProxy(self, x, y)
-    return printProxyEvents and print("EPX_: wm", self.style.ID, x, y)
-end
-local function _EVTkpProxy(self, key, scancode, isRepeat)
-    return printProxyEvents and print("EPX_: kp", self.style.ID, key, scancode, isRepeat)
-end
-local function _EVTkrProxy(self, key, scancode)
-    return printProxyEvents and print("EPX_: kr", self.style.ID, key, scancode)
-end
-local function _EVTtiProxy(self, text)
-    return printProxyEvents and print("EPX_: ti", self.style.ID, text)
-end
-local function _EVTfdProxy(self, file)
-    return printProxyEvents and print("EPX_: fd", self.style.ID, file)
-end
-local function _EVTddProxy(self, path)
-    return printProxyEvents and print("EPX_: dd", self.style.ID, path)
+local function _EVTmm(self, x, y, dx, dy)
+    return printEvents and print("EVT: mm", self.style.ID, x, y, dx, dy)
 end
 
 for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
@@ -187,20 +177,8 @@ for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
     v.textInput = _EVTti
     v.fileDropped = _EVTfd
     v.directoryDropped = _EVTdd
-    v.mouseEnteredProxy = _EVTmeProxy
-    v.mouseExitedProxy = _EVTmxProxy
-    v.mousePressedProxy = _EVTmcProxy
-    v.mouseReleasedProxy = _EVTmrProxy
-    v.wheelMovedProxy = _EVTwmProxy
-    v.keyPressedProxy = _EVTkpProxy
-    v.keyReleasedProxy = _EVTkrProxy
-    v.textInputProxy = _EVTtiProxy
-    v.fileDroppedProxy = _EVTfdProxy
-    v.directoryDroppedProxy = _EVTddProxy
-end
+    v.mousemoved = _EVTmm
 
-function f1:mousePressedProxy(x, y, button)
-    print("pressed in f1 subtree")
 end
 
 function UIDebugState.init()
@@ -224,6 +202,7 @@ function UIDebugState.init()
     love.textinput = handlers.textinput
     love.filedropped = handlers.filedropped
     love.directorydropped = handlers.directorydropped
+    love.mousemoved = handlers.mousemoved
     stateDesc = stateDesc or love.graphics.newText(font, "UI_DEBUG_STATE")
     click.start, click.stop = nil, nil
     w_width, w_height = love.graphics.getWidth(), love.graphics.getHeight()
@@ -315,19 +294,13 @@ local function drawAABB(AABB, c, n)
     love.graphics.setScissor(x, y, w, h)
 end
 
-local function drawCursor(x, y, text)
-    love.graphics.setColor(white:normalized())
-    love.graphics.points(x, y)
-    love.graphics.print(text or "Cursor", x + 2, y + 2)
-end
-
 function UIDebugState.draw()
     GUI:draw()
     love.graphics.setColor(red:normalized())
     love.graphics.draw(stateDesc, 0, 0)
     local mousePosText = love.graphics.newText(font, string.format("Mouse:\t(%d\t,%d)", love.mouse.getPosition()))
     love.graphics.draw(mousePosText, w_width - mousePosText:getWidth(), w_height - mousePosText:getHeight())
-    local memText = love.graphics.newText(font, string.format("Memory: %04d kB", collectgarbage("count")))
+    local memText = love.graphics.newText(font, string.format("Memory: %04d kB", floor(collectgarbage("count"))))
     love.graphics.draw(memText, 0, w_height - memText:getHeight())
     love.graphics.rectangle("fill", w_width - margin, 0, margin, margin)
     love.graphics.rectangle("line", GUI.origin.x, GUI.origin.y, GUI.size.x, GUI.size.y)
@@ -366,52 +339,6 @@ function UIDebugState.draw()
         _ = love.keyboard.isDown("4") and drawAABB(f4:getVisibleAvailAABB(), whiteish, " F4_AV")
         _ = love.keyboard.isDown("5") and drawAABB(f5:getVisibleAvailAABB(), whiteish, " F5_AV")
     end
-    if love.keyboard.isDown("c") then
-        if love.keyboard.isDown("0") then
-            f0:setCursor(0, 0)
-            local x, y = f0:getRawCursor()
-            drawCursor(x, y, " F0_cursor")
-            f0:setRawCursor(f0:getAvailAABB()[1])
-            drawCursor(x, y, " F0_avail_cursor")
-        end
-        if love.keyboard.isDown("1") then
-            f1:setCursor(0, 0)
-            local x, y = f1:getRawCursor()
-            drawCursor(x, y, " F1_cursor")
-            f1:setRawCursor(f1:getAvailAABB()[1])
-            drawCursor(x, y, " F1_avail_cursor")
-        end
-        if love.keyboard.isDown("2") then
-            f2:setCursor(0, 0)
-            local x, y = f2:getRawCursor()
-            drawCursor(x, y, " F2_cursor")
-            f2:setRawCursor(f2:getAvailAABB()[1])
-            drawCursor(x, y, " F2_avail_cursor")
-        end
-        ---[[
-        if love.keyboard.isDown("3") then
-            f3:setCursor(0, 0)
-            local x, y = f3:getRawCursor()
-            drawCursor(x, y, " F3_cursor")
-            f3:setRawCursor(f3:getAvailAABB()[1])
-            drawCursor(x, y, " F3_avail_cursor")
-        end
-        if love.keyboard.isDown("4") then
-            f4:setCursor(0, 0)
-            local x, y = f4:getRawCursor()
-            drawCursor(x, y, " F4_cursor")
-            f4:setRawCursor(f4:getAvailAABB()[1])
-            drawCursor(x, y, " F4_avail_cursor")
-        end
-        if love.keyboard.isDown("5") then
-            f5:setCursor(0, 0)
-            local x, y = f5:getRawCursor()
-            drawCursor(x, y, " F5_cursor")
-            f5:setRawCursor(f5:getAvailAABB()[1])
-            drawCursor(x, y, " F5_avail_cursor")
-        end
-    --]]
-    end
 end
 
 function UIDebugState.clear()
@@ -424,6 +351,7 @@ function UIDebugState.clear()
     love.textinput = oldHandlers.ti
     love.filedropped = oldHandlers.fd
     love.directorydropped = oldHandlers.dd
+    love.mousemoved = oldHandlers.mm
 end
 
 return UIDebugState

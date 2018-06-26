@@ -29,7 +29,7 @@ function UIButton.new(type, style, content, callback)
     self.clickDuration = 0
     self.enabled = false -- checkbox
     self.buttonClicked = callback -- callback setup
-    self.contentFrame = UIWidget({}, {invisible = false, passThru = true})
+    self.contentFrame = UIWidget({invisible=false}, {passThru = true})
     self:addWidget(self.contentFrame)
 
     setmetatable(self, UIButton)
@@ -83,6 +83,7 @@ function UIButton:mousePressed(x, y, button)
     if button == 1 and self:requestFocus() then
         self.clickDuration = 0
     end
+    if button ~= 1 then return true end
 end
 
 -- @override
@@ -97,6 +98,7 @@ function UIButton:mouseReleased(x, y, button)
         self.clickDuration = 0
         self:dropFocus()
     end
+    if button ~= 1 then return true end
 end
 
 function UIButton:requestDropFocus()

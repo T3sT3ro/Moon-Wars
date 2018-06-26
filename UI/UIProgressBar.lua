@@ -23,7 +23,7 @@ end
 ---- style.theme.<primary=hilit|secondary=bg|lore=contrast>
 ---- style.showValue=false
 ---- style.format="%d"
----- orientation='x|y'
+---- direction='x|y'
 
 function UIProgressBar.new(style, value, minV, maxV)
     Typeassert(
@@ -46,7 +46,7 @@ function UIProgressBar.new(style, value, minV, maxV)
                         }
                     },
                     showValue = "nil|boolean",
-                    orientation = {"ANY", "nil", "R:x", "R:y"},
+                    direction = {"ANY", "nil", "R:x", "R:y"},
                     format = "nil|string"
                 }
             }
@@ -60,7 +60,7 @@ function UIProgressBar.new(style, value, minV, maxV)
     self.max = maxV or 100
 
     self.style.showValue = style.showValue or false
-    self.style.orientation = style.orientation or "x"
+    self.style.direction = style.direction or "x"
     self.style.format = style.format or "%d"
 
     setmetatable(self, UIProgressBar)
@@ -79,7 +79,7 @@ function UIProgressBar:renderer()
     local value = min(max(self.value, self.min), self.max)
     local valueP = 100 * (value - self.min) / (self.max - self.min) -- normalized to [0-100]
     local fillWidth, fillHeight = self:getWidth(), self:getHeight()
-    if self.style.orientation == "x" then
+    if self.style.direction == "x" then
         fillWidth = fillWidth * (100 - valueP) / 100
     else
         fillHeight = fillHeight * (100 - valueP) / 100

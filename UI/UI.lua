@@ -52,7 +52,7 @@ function UI.new(x, y, width, height)
             _clickBegin = {{}, {}, {}},
             _clickEnd = {{}, {}, {}},
             origin = {x = x, y = y}, -- on screen real dimensions
-            size = {x = width, y = height}, --- ^^^
+            size = {x = width, y = height} --- ^^^
         },
         UI
     )
@@ -71,12 +71,10 @@ function UI:update(dt, ...)
     local hovered = self._widget:getHovered()
     if hovered ~= self._hoveredWidget then -- won't trigger while same widget is hovered or no widget is hovered
         if self._hoveredWidget and not self._hoveredWidget.flags.passThru then
-            self._hoveredWidget:getProxyEvent("mouseExited")()
-            self._hoveredWidget:mouseExited()
+            self._hoveredWidget:emitEvent("mouseExited")
         end
         if hovered and not hovered.flags.passThru then
-            hovered:getProxyEvent("mouseEntered")()
-            hovered:mouseEntered()
+            hovered:emitEvent("mouseEntered")
         end
     end
     self._hoveredWidget = hovered
@@ -203,8 +201,7 @@ local function mousePressedEvt(ui, x, y, button)
                 ui._focusedWidget:requestDropFocus()
             end
         end
-        widget:getProxyEvent("mousePressed")(x, y, button)
-        widget:mousePressed(x, y, button)
+        widget:emitEvent("mousePressed", x, y, button)
     elseif ui._focusedWidget then -- outside of any widget
         ui._focusedWidget:dropFocus()
     end
@@ -216,11 +213,9 @@ local function mouseReleasedEvt(ui, x, y, button)
     local targetWidget = ui:getWidgetAt(x, y, true) -- target is a solid widget
     ui._clickEnd[button] = {widget = targetWidget, x = x, y = y}
     if ui._focusedWidget then
-        ui._focusedWidget:getProxyEvent("mouseReleased")(x, y, button)
-        ui._focusedWidget:mouseReleased(x, y, button)
+        ui._focusedWidget:emitEvent("mouseReleased", x, y, button)
     elseif targetWidget then
-        targetWidget:getProxyEvent("mouseReleased")(x, y, button)
-        targetWidget:mouseReleased(x, y, button)
+        targetWidget:emitEvent("mouseReleased", x, y, button)
     end
     ui._clickEnd[button] = nil
     ui._clickBegin[button] = nil
@@ -228,32 +223,35 @@ end
 
 local function wheelMovedEvt(ui, x, y)
     if ui._hoveredWidget then
-        ui._hoveredWidget:getProxyEvent("wheelMoved")(x, y)
-        ui._hoveredWidget:wheelMoved(x, y)
+        ui._hoveredWidget:emitEvent("wheelMoved", x, y)
+    end
+end
+
+-- sent on mouse move to the focused widget only
+local function mouseMovedEvt(ui, x, y, dx, dy)
+    if ui._focusedWidget then
+        ui._focusedWidget:emitEvent("mouseMoved", x, y, dx, dy)
     end
 end
 
 -- can override, currently captures are active for focused element
 function UI:keyPressedEvt(key, scancode, isrepeat)
     if self._focusedWidget then
-        self._focusedWidget:getProxyEvent("keyPressed")(key, scancode, isrepeat)
-        self._focusedWidget:keyPressed(key, scancode, isrepeat)
+        self._focusedWidget:emitEvent("keyPressed", key, scancode, isrepeat)
     end
 end
 
 -- can override, currently captures are active for focused element
 function UI:keyReleasedEvt(key, scancode)
     if self._focusedWidget then
-        self._focusedWidget:getProxyEvent("keyReleased")(key, scancode)
-        self._focusedWidget:keyReleased(key, scancode)
+        self._focusedWidget:emitEvent("keyReleased", key, scancode)
     end
 end
 
 -- captures only for focused widget
 local function textInputEvt(ui, text)
     if ui._focusedWidget then
-        ui._focusedWidget:getProxyEvent("textInput")(text)
-        ui._focusedWidget:textInput(text)
+        ui._focusedWidget:emitEvent("textInput", text)
     end
 end
 
@@ -263,19 +261,15 @@ local function fileDirDroppedEvt(ui, file, isDir)
     local targetWidget = ui:getWidgetAt(mx, my, true)
     if isDir then
         if ui._focusedWidget then
-            ui._focusedWidget:getProxyEvent("directoryDropped")(file)
-            ui._focusedWidget:directoryDropped(file)
+            ui._focusedWidget:emitEvent("directoryDropped", file)
         elseif targetWidget then
-            targetWidget:getProxyEvent("directoryDropped")(file)
-            targetWidget:directoryDropped(file)
+            targetWidget:emitEvent("directoryDropped", file)
         end
     else
         if ui._focusedWidget then
-            ui._focusedWidget:getProxyEvent("fileDropped")(file)
-            ui._focusedWidget:fileDropped(file)
+            ui._focusedWidget:emitEvent("fileDropped", file)
         elseif targetWidget then
-            targetWidget:getProxyEvent("fileDropped")(file)
-            targetWidget:fileDropped(file)
+            targetWidget:emitEvent("fileDropped", file)
         end
     end
 end
@@ -292,6 +286,9 @@ function UI:getEventHandlers()
     end
     events.wheelmoved = function(x, y)
         wheelMovedEvt(self, x, y)
+    end
+    events.mousemoved = function(x, y, dx, dy)
+        mouseMovedEvt(self, x, y, dx, dy)
     end
     events.keypressed = function(key, scancode, isrepeat)
         self:keyPressedEvt(key, scancode, isrepeat)

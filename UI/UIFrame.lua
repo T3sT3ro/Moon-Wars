@@ -15,17 +15,17 @@ end
 ---- UIWidget.flags.*
 -- extra:
 ---- flags.passThru = true
----- flags.invisible = true iff displayMode not set
+---- style.invisible = true
 ---- style.displayMode = '[bf]': [b]order [f]ill
 function UIFrame.new(style)
     Typeassert(style, {"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}})
     style = style or {}
 
     local self = UIWidget(style)
-    self.flags.passThru = true
-    self.flags.invisible = not style.displayMode
-
+    self.style.invisible = style.invisible or style.invisible == nil and true
     self.style.displayMode = style.displayMode or ""
+
+    self.flags.passThru = true
     return setmetatable(self, UIFrame) -- ok since UIFrame's index is UIWidget
 end
 
@@ -35,6 +35,7 @@ function UIFrame:renderer()
         love.graphics.rectangle("fill", 0, 0, self:getWidth(), self:getHeight())
     end
     if string.match(self.style.displayMode, "b") then
+        love.graphics.setLineWidth(5)
         love.graphics.setColor(self.style.theme.fg:normalized())
         love.graphics.rectangle("line", 0, 0, self:getWidth(), self:getHeight())
     end

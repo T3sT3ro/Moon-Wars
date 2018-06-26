@@ -44,11 +44,10 @@ local UDB =
 UDB.init()
 UDB.update(5)
 UDB.draw()
-love.mouse.x, love.mouse.y = 488, 318
-love.keyboard["left"] = true
-
+love.mouse.x, love.mouse.y = 116, 295
 UDB.update(5)
 UDB.draw()
+love.wheelmoved(0, 1)
 UDB.update(5)
 UDB.draw()
 

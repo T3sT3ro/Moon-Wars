@@ -49,12 +49,12 @@ end
 ---- size = {x, y}
 ---- margin = [ {all} | {x, y} | {left, right, up, down} ]
 ---- theme = {bg, fg, fg_focus, hilit, hilit_focus}
+---- invisible = false
 -- flags:
 ---- keepFocus
 ---- passThru
 ---- allowOverflow
 ---- hidden
----- invisible TODO: move to style
 ---- draggable
 function UIWidget.new(style, flags)
     local valPred = function(x)
@@ -96,7 +96,8 @@ function UIWidget.new(style, flags)
                         hilit_focus = {"ANY", "nil", Color.isColor},
                         font = "nil|userdata"
                     }
-                }
+                },
+                invisible = "nil|boolean"
             }
         }
     )
@@ -110,7 +111,6 @@ function UIWidget.new(style, flags)
                 passThru = "nil|boolean",
                 allowOverflow = "nil|boolean",
                 hidden = "nil|boolean",
-                invisible = "nil|boolean",
                 draggable = "nil|boolean"
             }
         }
@@ -135,6 +135,7 @@ function UIWidget.new(style, flags)
     style.margin.up = style.margin.up or 0
     style.margin.down = style.margin.down or 0
     style.theme = style.theme or {}
+    style.invisible = style.invisible or false -- doesn't render self but renders children
 
     --- DEFAULT FLAGS
     flags = flags or {}
@@ -142,7 +143,6 @@ function UIWidget.new(style, flags)
     flags.passThru = flags.passThru or false -- true for element to not register click
     flags.allowOverflow = flags.allowOverflow or false -- TODO: allowOverflow by IDs
     flags.hidden = flags.hidden or false -- FIXME: test
-    flags.invisible = flags.invisible or false -- doesn't render self but renders children
     flags.draggable = flags.draggable or false -- TODO: dragged by margin and all pass-thru inner elements
 
     --- OBJECT CONSTRUCTION BEGIN
@@ -325,13 +325,13 @@ function UIWidget.new(style, flags)
     self.style.theme.hilit_focus = style.theme.hilit_focus
     self.style.theme.hilit = style.theme.hilit
     self.style.theme.font = style.theme.font
+    self.style.invisible = style.invisible
 
     self.flags.keepFocus = flags.keepFocus
     self.flags.passThru = flags.passThru
     self.flags.allowOverflow = flags.allowOverflow
     self.flags.hidden = flags.hidden
-    self.flags.invisible = flags.invisible
-    self.flags.draggable = flags.draggable
+    self.flags.draggable = flags.draggable -- TODO:
     return self
 end
 
@@ -357,8 +357,10 @@ end
 ----- scissor is set to visible available space
 function UIWidget:draw(...)
     if not self.flags.hidden then
-        if not self.flags.invisible then
+        if not self.style.invisible then
+            love.graphics.push("all")
             self:renderer(...)
+            love.graphics.pop()
         end
         for _, v in ipairs(self._childrenByZ) do
             love.graphics.push("all")
@@ -377,7 +379,7 @@ end
 
 -- return hovered widget (may be self) or nil for none
 function UIWidget:getHovered()
-    if not self.flags.hidden then
+    if not self.flags.hidden and not love.mouse.getRelativeMode() then
         local hover = nil
         for i = #self._childrenByZ, 1, -1 do
             hover = hover or self._childrenByZ[i]:getHovered()
@@ -634,106 +636,69 @@ function UIWidget:getRelativeMouse()
 end
 
 --------- EVENTS ---------
+-- if event returns true it is propagated up in responders chain (to the parent or ignored if toplevel)
 
 -- when mouse exits realAABB of this element and passThru=false
 function UIWidget:mouseEntered()
+    return false
 end
 
 -- when mouse enters realAABB of this element and passThru=false
 function UIWidget:mouseExited()
+    return false
 end
 
 -- whenever mouse was clicked on given object
 function UIWidget:mousePressed(x, y, button)
+    return true
 end
 
 -- whenever mouse was released on given object
 function UIWidget:mouseReleased(x, y, button)
+    return true
+end
+
+function UIWidget:mouseMoved(x, y, dx, dy) 
+    return false
 end
 
 -- whenever mouse wheel has been moved: x positive is horizontal right, y positive is vertical up
 function UIWidget:wheelMoved(x, y)
+    return true
 end
 
 -- whenever given keyboard key has been pressed with isRepeat if it was held
 function UIWidget:keyPressed(key, scancode, isRepeat)
+    return false
 end
 
 -- whenever keyboard key was released
 function UIWidget:keyReleased(key, scancode)
+    return false
 end
 
 -- whenever text has been entered by user -> shift+2  produces '@' as text
 function UIWidget:textInput(text)
+    return false
 end
 
 -- whenever file is dropped on this element and passThru=false
 function UIWidget:fileDropped(file)
+    return false
 end
 
 -- whenever directory is dropped on this element and passThru=false; path is the full platform-dependent path to directory
 function UIWidget:directoryDropped(path)
+    return false
 end
 
---------------------------
--- Proxy events are triggered if corresponding event is emmited to the child
-function UIWidget:mouseEnteredProxy()
-end
-function UIWidget:mouseExitedProxy()
-end
-function UIWidget:mousePressedProxy(x, y, button)
-end
-function UIWidget:mouseReleasedProxy(x, y, button)
-end
-function UIWidget:wheelMovedProxy(x, y)
-end
-function UIWidget:keyPressedProxy(key, scancode, isRepeat)
-end
-function UIWidget:keyReleasedProxy(key, scancode)
-end
-function UIWidget:textInputProxy(text)
-end
-function UIWidget:fileDroppedProxy(file)
-end
-function UIWidget:directoryDroppedProxy(path)
+-- emits specific event with arguments to the widget and handles propagating through responder's chain
+function UIWidget:emitEvent(eventName, ...)
+    while self[eventName](self, ...) and self._parent ~= self do
+        self = self._parent
+    end
 end
 
-function UIWidget:getProxyEvent(name)
-    name = name or ""
-    local f
-    if name == "mousePressed" then
-        f = self.mousePressedProxy
-    elseif name == "mouseReleased" then
-        f = self.mouseReleasedProxy
-    elseif name == "mouseEntered" then
-        f = self.mouseEnteredProxy
-    elseif name == "wheelMoved" then
-        f = self.wheelMovedProxy
-    elseif name == "mouseExited" then
-        f = self.mouseExitedProxy
-    elseif name == "keyPressed" then
-        f = self.keyPressedProxy
-    elseif name == "keyReleased" then
-        f = self.keyReleasedProxy
-    elseif name == "textInput" then
-        f = self.textInputProxy
-    elseif name == "fileDropped" then
-        f = self.fileDroppedProxy
-    elseif name == "directoryDropped" then
-        f = self.directoryDroppedProxy
-    else
-        error("UIWidget: unknown proxy event '" .. name .. "'")
-    end
-    if self._parent == self then -- toplevel
-        return f
-    else
-        local fp = self._parent:getProxyEvent(name)
-        return function(...)
-            fp(...) -- FIXME: f(..., fp(...)) ??? for parent returns
-            f(self, ...)
-        end
-    end
-end
 --------------------------
 return setmetatable(
     UIWidget,
