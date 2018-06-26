@@ -80,7 +80,7 @@ function UIProgressBar:renderer()
     local valueP = 100 * (value - self.min) / (self.max - self.min) -- normalized to [0-100]
     local fillWidth, fillHeight = self:getWidth(), self:getHeight()
     if self.style.direction == "x" then
-        fillWidth = fillWidth * (100 - valueP) / 100
+        fillWidth = fillWidth * valueP / 100
     else
         fillHeight = fillHeight * (100 - valueP) / 100
     end
