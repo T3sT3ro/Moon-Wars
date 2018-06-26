@@ -1,4 +1,3 @@
-local RM = require "ResourceManager"
 local AI = require "game/MapAI"
 local abs = math.abs
 local GameMap = {}
