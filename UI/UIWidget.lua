@@ -6,10 +6,6 @@ local Typeassert = require "utils/Typeassert"
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
 
-local UIFrame = require "UI/UIFrame"
-local UIButton = require "UI/UIButton"
-
-
 local floor = math.floor
 
 UIWidget.__index = UIWidget
@@ -626,13 +622,12 @@ function UIWidget:getWidgetByID(id)
 end
 
 -- returns mouse relative to this element's AABB or nil,nil if outside bounds of realAABB
-function UIWidget:getRelativeMouse()
-    if not self:mouseIn() then
-        return nil, nil
-    end
-    local mx, my = love.mouse.getPosition()
-    mx, my = mx - self.style.origin.x, my - self.style.origin.y
-    return
+function UIWidget:toLocalCoordinates(x, y)
+    return x - self._AABB[1].x, y - self._AABB[1].y
+end
+
+function UIWidget:toGlobalCoordinates(x, y)
+    return x + self._AABB[1].x, y + self._AABB[1].y    
 end
 
 --------- EVENTS ---------

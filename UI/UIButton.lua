@@ -148,7 +148,7 @@ end
 
 -- true iff mouse is held and it started over button
 function UIButton:isPressed()
-    return self._UI:getClickBegin(1) == self
+    return self._UI and self._UI:getClickBegin(1) == self
 end
 
 -- true if enabled, in checkbox mode

@@ -21,7 +21,7 @@ end
 ---- style.margin ~ ignored, can be simulated with 1 buffer frame inside scroll. Do not explicitly set margins.
 ---- style.invisible ~ ignored
 -- extra:
----- style.virtualSize = {x='100%', y='100%'} ~ weird things happen when set to less than parent's size
+---- style.virtualSize = {x='100%', y='100%'}
 ---- style.scrollSpeed = 30 (amount of pixels scrolled by mouse wheel move of 1)
 ---- flags.scroll = {x=false, y=true}
 ---- flags.scrollInfinite = false (true for scroll only to the edge of virtual space)
@@ -130,8 +130,8 @@ function UIScrollPane:scroll(dx, dy) -- x +> y +^
         cs.origin.x = cs.origin.x + dx
         cs.origin.y = cs.origin.y - dy
     else
-        cs.origin.x = max(min(0, cs.origin.x + dx), -(self._widgetFrame:getWidth() - self:getWidth()))
-        cs.origin.y = max(min(0, cs.origin.y - dy), -(self._widgetFrame:getHeight() - self:getHeight()))
+        cs.origin.x = min(0, max(cs.origin.x + dx, -(self._widgetFrame:getWidth() - self:getWidth())))
+        cs.origin.y = min(0, max(cs.origin.y - dy, -(self._widgetFrame:getHeight() - self:getHeight())))
     end
 end
 
@@ -158,6 +158,11 @@ function UIScrollPane:keyPressed(key)
     if key == "kp0" and self:isDragged() then
         self._widgetFrame.style.origin.x, self._widgetFrame.style.origin.y = 0, 0
     end
+end
+
+function UIScrollPane:reloadLayoutSelf()
+    UIWidget.reloadLayoutSelf(self)
+    self:scroll(0, 0)
 end
 
 function UIScrollPane:renderer()

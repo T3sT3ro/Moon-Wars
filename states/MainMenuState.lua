@@ -61,6 +61,8 @@ function MainMenuState.init()
     love.filedropped = handlers.filedropped
     love.directorydropped = handlers.directorydropped
     --love.graphics.setColor(1,1,1,1)
+    GUI:resize(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    GUI:reload()
 end
 
 function MainMenuState.clear()

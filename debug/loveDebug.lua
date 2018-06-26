@@ -6,9 +6,9 @@ love = {
     graphics = {width = 800, height = 600},
     color = {0, 0, 0, 0},
     stack = {},
-    translate = {x=0, y=0},
+    translate = {x = 0, y = 0},
     lineWidth = 1,
-    relativeMode = false,
+    relativeMode = false
 }
 function love.graphics.getWidth()
     print("love.graphics.getWidth():", "~>", love.graphics.width)
@@ -49,7 +49,10 @@ end
 function love.graphics.newFont(...)
     print("love.graphics.newFont():", ...)
     local font = {}
-    font.getWrap = function() print("font.getWrap()") return 20, {"line1", "second line"} end
+    font.getWrap = function()
+        print("font.getWrap()")
+        return 20, {"line1", "second line"}
+    end
     return font
 end
 function love.graphics.newText(...)
@@ -135,11 +138,16 @@ function love.mouse.getY()
 end
 function love.graphics.push(x)
     print(string.format("love.graphics.push(" .. (x or "") .. ")"))
-    love.stack[#love.stack + 1] = {color=love.color, scissor=love.scissor, translate=love.translate, lineWidth=love.lineWidth}
+    love.stack[#love.stack + 1] = {
+        color = love.color,
+        scissor = love.scissor,
+        translate = love.translate,
+        lineWidth = love.lineWidth
+    }
     -- copy of values so it won't overrite stack
     love.color = {love.color[1], love.color[2], love.color[3], love.color[4]}
-    love.scissor = love.scissor and {x=love.scissor.x,y=love.scissor.t,w=love.scissor.w,h=love.scissor.h}
-    love.translate = {x=love.translate.x, y=love.translate.y}
+    love.scissor = love.scissor and {x = love.scissor.x, y = love.scissor.t, w = love.scissor.w, h = love.scissor.h}
+    love.translate = {x = love.translate.x, y = love.translate.y}
 end
 function love.graphics.pop(x)
     print(string.format("love.graphics.pop(" .. (x or "") .. ")"))
@@ -165,4 +173,7 @@ end
 function love.mouse.getRelativeMode(set)
     print(string.format("love.mouse.setRelativeMode(%s):", set and "true" or "false"))
     love.relativeMode = set
+end
+function love.graphics.line(x1, y1, x2, y2)
+    print(string.format("love.graphics.line(%d, %d, %d, %d):", x1, y1, x2, y2))
 end

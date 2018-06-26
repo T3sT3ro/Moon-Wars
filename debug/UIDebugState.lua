@@ -40,8 +40,12 @@ local side =
     {ID = "side", margin = {all = 5}, size = {x = "20%"}, allign = {x = "right"}, invisible = false, displayMode = "bf"}
 )
 local body = UIFrame({ID = "body", size = {x = "80%"}, allign = {x = "left"}})
-local scroll = UIScrollPane({ID = "scroll", virtualSize={x="120%", y="120%"}, margin={all=50}}, {scroll={x=true}, scrollInfinite=false})
-local scrollLabel = UILabel("scroll me", {ID="scrollMeText"})
+local scroll =
+    UIScrollPane(
+    {ID = "scroll", virtualSize = {x = 500, y = 500}, margin = {all = 50}},
+    {scroll = {x = true}, scrollInfinite = false}
+)
+local scrollLabel = UILabel("scroll me", {ID = "scrollMeText"})
 local f0 = UIWidget({ID = "f0", size = {x = "80%", y = "80%"}, margin = {all = 30}})
 local f1 = UIWidget({ID = "f1", size = {x = "80%", y = "80%"}, margin = {all = 30}})
 local f2 = UIWidget({ID = "f2", allign = {x = "left", y = "up"}, size = {x = "50%", y = "80%"}, margin = {all = 30}})
@@ -178,7 +182,10 @@ for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
     v.fileDropped = _EVTfd
     v.directoryDropped = _EVTdd
     v.mousemoved = _EVTmm
+end
 
+f0.mousePressed = function (self, x, y, button) 
+    print(button, "->", self:toLocalCoordinates(x, y))
 end
 
 function UIDebugState.init()
