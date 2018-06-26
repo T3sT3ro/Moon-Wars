@@ -21,15 +21,19 @@ end
 ---- flags.enable = true iff type=='checkbox'
 ---- callback = function triggered when button clicked
 
+-- type = {nil|'checkbox'|'normal'}   content = love Image or love Text
 function UIButton.new(type, style, content, callback)
-    Typeassert({type, style, callback}, {{"ANY", "nil", "R:checkbox", "R:normal"}, "nil|table", "nil|function"})
+    Typeassert(
+        {type, style, content, callback},
+        {{"ANY", "nil", "R:checkbox", "R:normal"}, "nil|table", "nil|userdata|string", "nil|function"}
+    )
     style = style or {}
     local self = UIWidget(style)
     self.flags.enable = type == "checkbox"
     self.clickDuration = 0
     self.enabled = false -- checkbox
     self.buttonClicked = callback -- callback setup
-    self.contentFrame = UIWidget({invisible=false}, {passThru = true})
+    self.contentFrame = UIWidget({invisible = false}, {passThru = true})
     self:addWidget(self.contentFrame)
 
     setmetatable(self, UIButton)
@@ -38,7 +42,7 @@ function UIButton.new(type, style, content, callback)
 end
 
 local function contentPred(o)
-    return o == nil or (o.typeOf and (o:typeOf("Image") or o:typeOf("Text")))
+    return o == nil or type(o) == string or (o.typeOf and (o:typeOf("Image") or o:typeOf("Text")))
 end
 -- used to change the content of a button. content can be love Text or love Image for now
 function UIButton:setContent(content, contentAllign)
@@ -56,10 +60,13 @@ function UIButton:setContent(content, contentAllign)
             }
         }
     )
+    if type(content) == "string" then
+        content = love.graphics.newText(self.style.theme.font, content)
+    end
     if content then -- FIXME: expand to drawable ?
         self.contentFrame.flags.hidden = false
-        self.contentFrame.style.size.x = (contentAllign and contentAllign.x) or "center"
-        self.contentFrame.style.size.y = (contentAllign and contentAllign.y) or "center"
+        self.contentFrame.style.allign.x = (contentAllign and contentAllign.x) or "center"
+        self.contentFrame.style.allign.y = (contentAllign and contentAllign.y) or "center"
         local width, height = max(content:getWidth(), 1), max(content:getHeight(), 1)
         self.contentFrame:resize(width, height)
 
@@ -83,7 +90,9 @@ function UIButton:mousePressed(x, y, button)
     if button == 1 and self:requestFocus() then
         self.clickDuration = 0
     end
-    if button ~= 1 then return true end
+    if button ~= 1 then
+        return true
+    end
 end
 
 -- @override
@@ -98,7 +107,9 @@ function UIButton:mouseReleased(x, y, button)
         self.clickDuration = 0
         self:dropFocus()
     end
-    if button ~= 1 then return true end
+    if button ~= 1 then
+        return true
+    end
 end
 
 function UIButton:requestDropFocus()
