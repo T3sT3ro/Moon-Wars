@@ -4,7 +4,11 @@ love = {
     mouse = {x = 0, y = 0, wheel = {x = 0, y = 0}},
     scissor = nil,
     graphics = {width = 800, height = 600},
-    color = {0, 0, 0, 0}
+    color = {0, 0, 0, 0},
+    stack = {},
+    translate = {x=0, y=0},
+    lineWidth = 1,
+    relativeMode = false,
 }
 function love.graphics.getWidth()
     print("love.graphics.getWidth():", "~>", love.graphics.width)
@@ -28,19 +32,25 @@ function love.graphics.print(...)
 end
 function love.graphics.newImage(...)
     print("love.graphics.newImage():", ...)
-    return {        getWidth = function(self)
-        print("text:getWidth()")
-        return 30
-    end,
-    getHeight = function(self)
-        print("text:getHeight()")
-        return 10
-    end,
-    typeOf = function(self, t) return t == "Image" end}
+    return {
+        getWidth = function(self)
+            print("text:getWidth()")
+            return 30
+        end,
+        getHeight = function(self)
+            print("text:getHeight()")
+            return 10
+        end,
+        typeOf = function(self, t)
+            return t == "Image"
+        end
+    }
 end
 function love.graphics.newFont(...)
     print("love.graphics.newFont():", ...)
-    return ({...})[1]
+    local font = {}
+    font.getWrap = function() print("font.getWrap()") return 20, {"line1", "second line"} end
+    return font
 end
 function love.graphics.newText(...)
     print("love.graphics.newText():", ...)
@@ -53,7 +63,9 @@ function love.graphics.newText(...)
             print("text:getHeight()")
             return 10
         end,
-        typeOf = function(self, t) return t == "Text" end
+        typeOf = function(self, t)
+            return t == "Text"
+        end
     }
 end
 function love.graphics.setScissor(x, y, w, h)
@@ -120,4 +132,37 @@ end
 function love.mouse.getY()
     print("love.mouse.getY():", "~>", love.mouse.y)
     return love.mouse.y
+end
+function love.graphics.push(x)
+    print(string.format("love.graphics.push(" .. (x or "") .. ")"))
+    love.stack[#love.stack + 1] = {color=love.color, scissor=love.scissor, translate=love.translate, lineWidth=love.lineWidth}
+    -- copy of values so it won't overrite stack
+    love.color = {love.color[1], love.color[2], love.color[3], love.color[4]}
+    love.scissor = love.scissor and {x=love.scissor.x,y=love.scissor.t,w=love.scissor.w,h=love.scissor.h}
+    love.translate = {x=love.translate.x, y=love.translate.y}
+end
+function love.graphics.pop(x)
+    print(string.format("love.graphics.pop(" .. (x or "") .. ")"))
+    local state = love.stack[#love.stack]
+    love.color = state.color
+    love.scissor = state.scissor
+    love.translate = state.translate
+    love.lineWidth = state.lineWidth
+    table.remove(love.stack)
+end
+function love.graphics.translate(dx, dy)
+    print(string.format("love.graphics.translate(%d, %d):", dx, dy))
+    love.translate.x = love.translate.x + dx
+    love.translate.y = love.translate.y + dy
+end
+function love.graphics.setLineWidth(width)
+    print(string.format("love.graphics.setLineWidth(%d):", width))
+    love.lineWidth = width
+end
+function love.mouse.getRelativeMode()
+    print("love.mouse.getRelativeMode():", "~>", love.relativeMode)
+end
+function love.mouse.getRelativeMode(set)
+    print(string.format("love.mouse.setRelativeMode(%s):", set and "true" or "false"))
+    love.relativeMode = set
 end

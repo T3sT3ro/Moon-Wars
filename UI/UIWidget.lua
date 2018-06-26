@@ -5,6 +5,11 @@ local UI = require "UI/UI"
 local Typeassert = require "utils/Typeassert"
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
+
+local UIFrame = require "UI/UIFrame"
+local UIButton = require "UI/UIButton"
+local UIGrid = require "UI/UIGrid"
+
 local floor = math.floor
 
 UIWidget.__index = UIWidget
@@ -12,10 +17,10 @@ UIWidget.__index = UIWidget
 --- absolute values are pixels
 --- % values are relative to available space + widgets's layout policy
 
-function UIWidget.isUIWidget(o)
+function UIWidget.isA(o, class)
     -- for object get metatable, for class it's superclass by __index
     local mt = getmetatable(o)
-    while mt ~= UIWidget do
+    while mt ~= class do
         if mt == nil then
             return false
         end
@@ -24,13 +29,17 @@ function UIWidget.isUIWidget(o)
     return true
 end
 
+function UIWidget.isUIWidget(o)
+    return UIWidget.isA(o, UIWidget)
+end
+
 function UIWidget.isID(ID)
-    return type(ID) == "number"
+    return type(ID) == "number" or type(ID) == "string"
 end
 
 function UIWidget:nextID(...)
     UIWidget.UUIDseed = UIWidget.UUIDseed + 1
-    return UIWidget.UUIDseed
+    return "wg#" .. UIWidget.UUIDseed
 end
 
 -- style:
@@ -40,12 +49,12 @@ end
 ---- size = {x, y}
 ---- margin = [ {all} | {x, y} | {left, right, up, down} ]
 ---- theme = {bg, fg, fg_focus, hilit, hilit_focus}
+---- invisible = false
 -- flags:
 ---- keepFocus
 ---- passThru
 ---- allowOverflow
 ---- hidden
----- invisible
 ---- draggable
 function UIWidget.new(style, flags)
     local valPred = function(x)
@@ -57,6 +66,7 @@ function UIWidget.new(style, flags)
             "ANY",
             "nil",
             {
+                ID = "number|string|nil",
                 z = "number|nil",
                 allign = {
                     "ANY",
@@ -83,9 +93,11 @@ function UIWidget.new(style, flags)
                         fg = {"ANY", "nil", Color.isColor},
                         fg_focus = {"ANY", "nil", Color.isColor},
                         hilit = {"ANY", "nil", Color.isColor},
-                        hilit_focus = {"ANY", "nil", Color.isColor}
+                        hilit_focus = {"ANY", "nil", Color.isColor},
+                        font = "nil|userdata"
                     }
-                }
+                },
+                invisible = "nil|boolean"
             }
         }
     )
@@ -99,7 +111,6 @@ function UIWidget.new(style, flags)
                 passThru = "nil|boolean",
                 allowOverflow = "nil|boolean",
                 hidden = "nil|boolean",
-                invisible = "nil|boolean",
                 draggable = "nil|boolean"
             }
         }
@@ -107,6 +118,7 @@ function UIWidget.new(style, flags)
 
     --- DEFAULT STYLE
     style = style or {allign = {}, origin = {}, size = {}, margin = {}, theme = {}}
+    style.ID = style.ID or UIWidget.nextID()
     style.z = style.z or 0
     style.allign = style.allign or {}
     style.allign.x = style.allign.x or "center"
@@ -123,6 +135,7 @@ function UIWidget.new(style, flags)
     style.margin.up = style.margin.up or 0
     style.margin.down = style.margin.down or 0
     style.theme = style.theme or {}
+    style.invisible = style.invisible or false -- doesn't render self but renders children
 
     --- DEFAULT FLAGS
     flags = flags or {}
@@ -130,7 +143,6 @@ function UIWidget.new(style, flags)
     flags.passThru = flags.passThru or false -- true for element to not register click
     flags.allowOverflow = flags.allowOverflow or false -- TODO: allowOverflow by IDs
     flags.hidden = flags.hidden or false -- FIXME: test
-    flags.invisible = flags.invisible or false -- doesn't render self but renders children
     flags.draggable = flags.draggable or false -- TODO: dragged by margin and all pass-thru inner elements
 
     --- OBJECT CONSTRUCTION BEGIN
@@ -180,10 +192,10 @@ function UIWidget.new(style, flags)
 
                 if k == "x" then
                     self._layoutModified = self._layoutModified or (valP ~= t._xP) or (val ~= t._x)
-                    t._xP, t._x = (valP and val), ((valP and floor(self._availAABB:width() * (valP / 100))) or val)
+                    t._xP, t._x = (valP and val), ((valP and floor(self._availAABB:getWidth() * (valP / 100))) or val)
                 elseif k == "y" then
                     self._layoutModified = self._layoutModified or (valP ~= t._yP) or (val ~= t._y)
-                    t._yP, t._y = (valP and val), ((valP and floor(self._availAABB:height() * (valP / 100))) or val)
+                    t._yP, t._y = (valP and val), ((valP and floor(self._availAABB:getHeight() * (valP / 100))) or val)
                 end
             end,
             _value = function(self, k) -- returns stored value
@@ -232,16 +244,16 @@ function UIWidget.new(style, flags)
                 local valP = UIWidget.getPercent(val)
                 if k == "left" then
                     self._layoutModified = self._layoutModified or (valP ~= t._lP) or (val ~= t._l)
-                    t._lP, t._l = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
+                    t._lP, t._l = (valP and val), ((valP and floor(self._AABB:getWidth() * (valP / 100))) or val)
                 elseif k == "right" then
                     self._layoutModified = self._layoutModified or (valP ~= t._rP) or (val ~= t._r)
-                    t._rP, t._r = (valP and val), ((valP and floor(self._AABB:width() * (valP / 100))) or val)
+                    t._rP, t._r = (valP and val), ((valP and floor(self._AABB:getWidth() * (valP / 100))) or val)
                 elseif k == "up" then
                     self._layoutModified = self._layoutModified or (valP ~= t._uP) or (val ~= t._u)
-                    t._uP, t._u = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
+                    t._uP, t._u = (valP and val), ((valP and floor(self._AABB:getHeight() * (valP / 100))) or val)
                 elseif k == "down" then
                     self._layoutModified = self._layoutModified or (valP ~= t._dP) or (val ~= t._d)
-                    t._dP, t._d = (valP and val), ((valP and floor(self._AABB:height() * (valP / 100))) or val)
+                    t._dP, t._d = (valP and val), ((valP and floor(self._AABB:getHeight() * (valP / 100))) or val)
                 elseif k == "x" then -- use previous
                     T.left = val
                     T.right = val
@@ -270,15 +282,24 @@ function UIWidget.new(style, flags)
         {},
         {
             __index = function(t, k) -- returns value from _
-                local code = ({bg = 1, fg = 2, fg_focus = 3, hilit = 4, hilit_focus = 5})[k]
-                return (code and self._UI and Color(self._UI.theme[code])) or Color(0, 0, 0) -- default is black
+                local val = rawget(t, k)
+                if val then
+                    return val
+                end
+                local theme =
+                    (self._parent and self._parent ~= self and self._parent.style.theme) or
+                    (self._UI and self._UI.theme)
+                if k == "font" then
+                    return (k and self._UI and theme[k]) or love.graphics.newFont(10)
+                else
+                    return (k and self._UI and Color(theme[k])) or Color(0, 0, 0) -- default is black
+                end
             end
         }
     )
 
     self.__index = UI
     self._UI = nil
-    self._ID = UIWidget.nextID() -- might be obsolete, because objects self identifies itself by unique table
     self._childrenByZ = {}
     self._parent = self -- stand-alone widgets shouldn't exist
     self._visibleAvailAABB = AABB(0, 0, 0, 0) -- AABB inside availAABB that will be actually displayed
@@ -286,6 +307,7 @@ function UIWidget.new(style, flags)
     self._AABB = AABB(0, 0, 0, 0) -- requested AABB according to availAABB [- parent.margins]
     self._layoutModified = true
 
+    self.style.ID = style.ID
     self.style.z = style.z
     self.style.allign.x = style.allign.x
     self.style.allign.y = style.allign.y
@@ -302,18 +324,19 @@ function UIWidget.new(style, flags)
     self.style.theme.fg_focus = style.theme.fg_focus
     self.style.theme.hilit_focus = style.theme.hilit_focus
     self.style.theme.hilit = style.theme.hilit
+    self.style.theme.font = style.theme.font
+    self.style.invisible = style.invisible
 
     self.flags.keepFocus = flags.keepFocus
     self.flags.passThru = flags.passThru
     self.flags.allowOverflow = flags.allowOverflow
     self.flags.hidden = flags.hidden
-    self.flags.invisible = flags.invisible
-    self.flags.draggable = flags.draggable
+    self.flags.draggable = flags.draggable -- TODO:
     return self
 end
 
 -- to override
-function UIWidget:updater()
+function UIWidget:updater(dt, ...)
 end
 
 function UIWidget:update(...) -- TODO: status passed during tree traversal (anyHovered flag)
@@ -327,21 +350,25 @@ function UIWidget:update(...) -- TODO: status passed during tree traversal (anyH
 end
 
 -- to override
-function UIWidget:renderer()
+function UIWidget:renderer(...)
 end
 
 -- guarantee: elements are setup properly
 ----- scissor is set to visible available space
 function UIWidget:draw(...)
     if not self.flags.hidden then
-        if not self.flags.invisible then
+        if not self.style.invisible then
+            love.graphics.push("all")
             self:renderer(...)
+            love.graphics.pop()
         end
         for _, v in ipairs(self._childrenByZ) do
+            love.graphics.push("all")
             -- TODO: allow overflow flag implementation as set scissors to parent
             love.graphics.setScissor(v._visibleAvailAABB:cut(v._AABB):normalized())
-            v:setCursor(0,0)
+            love.graphics.translate(v._AABB[1].x - self._AABB[1].x, v._AABB[1].y - self._AABB[1].y)
             v:draw(...)
+            love.graphics.pop()
         end
     end
 end
@@ -350,9 +377,9 @@ function UIWidget.getPercent(val)
     return type(val) == "string" and string.match(val, "^(%-?[0-9]+)%%$")
 end
 
--- return ID of hovered widget (may be self) or nil for none
+-- return hovered widget (may be self) or nil for none
 function UIWidget:getHovered()
-    if not self.flags.hidden then
+    if not self.flags.hidden and not love.mouse.getRelativeMode() then
         local hover = nil
         for i = #self._childrenByZ, 1, -1 do
             hover = hover or self._childrenByZ[i]:getHovered()
@@ -362,8 +389,8 @@ function UIWidget:getHovered()
     return nil
 end
 
--- to override
-local function reloadLayoutSelf(self)
+-- CHANGE ONLY IF YOU KNOW WHAT YOU'RE DOING
+function UIWidget:reloadLayoutSelf()
     -- assigning has sideeffect of recalculating exact sizes
     self.style.origin.x = self.style.origin:value("x")
     self.style.origin.y = self.style.origin:value("y")
@@ -381,17 +408,17 @@ local function reloadLayoutSelf(self)
     local x2 = x1 + self.style.size.x
     local y2 = y1 + self.style.size.y
     if self.style.allign.x == "center" then
-        local dx = floor((self._availAABB:width() - self.style.size.x) / 2)
+        local dx = floor((self._availAABB:getWidth() - self.style.size.x) / 2)
         x1, x2 = x1 + dx, x2 + dx
     elseif self.style.allign.x == "right" then
-        local dx = self._availAABB:width() - self.style.size.x
+        local dx = self._availAABB:getWidth() - self.style.size.x
         x1, x2 = x1 + dx, x2 + dx
     end
     if self.style.allign.y == "center" then
-        local dy = floor((self._availAABB:height() - self.style.size.y) / 2)
+        local dy = floor((self._availAABB:getHeight() - self.style.size.y) / 2)
         y1, y2 = y1 + dy, y2 + dy
     elseif self.style.allign.y == "down" then
-        local dy = self._availAABB:height() - self.style.size.y
+        local dy = self._availAABB:getHeight() - self.style.size.y
         y1, y2 = y1 + dy, y2 + dy
     end
     self._AABB:set(
@@ -405,7 +432,7 @@ end
 -- guarantee: availAABB and visibleAvailAABB set properly
 function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was updated
     if not self.flags.hidden and doReload or self._layoutModified then -- resources save on hidden objects
-        reloadLayoutSelf(self)
+        self:reloadLayoutSelf()
         -- z-index children sort
         table.sort(
             self._childrenByZ,
@@ -438,7 +465,6 @@ end
 -- drops focus, reset scroll, clear buffers etc.
 --- quarantee - availAABB is always set properly
 function UIWidget:reload(...)
-    self._hovered = false
     self._UI = self._parent._UI
     self:dropFocus()
     self:reloadLayout(true)
@@ -501,9 +527,18 @@ function UIWidget:getVisibleAvailAABB()
     return AABB(self._visibleAvailAABB)
 end
 
--- copy of origin
+-- copy of style.origin
 function UIWidget:getOrigin()
+<<<<<<< HEAD
     return self.style.origin.x,self.style.origin.y
+=======
+    return self.style.origin.x, self.style.origin.y
+end
+
+-- returns x, y of self upper left corner
+function UIWidget:getScreenOrigin()
+    return self._AABB[1].x, self._AABB[1].y
+>>>>>>> origin/feature/UI
 end
 
 --* syntactic sugar
@@ -514,35 +549,6 @@ end
 --* syntactic sugar
 function UIWidget:getWidth()
     return self.style.size.x
-end
-
--- cursor relative to self
-function UIWidget:getCursor()
-    if self._UI then
-        local cx, cy = self._UI:getRawCursor()
-        return cx - self._AABB[1].x, cy - self._AABB[1].y
-    else
-        return nil
-    end
-end
-
--- proxy to parent
-function UIWidget:getRawCursor()
-    if self._UI then
-        return self._UI:getRawCursor()
-    else
-        return nil
-    end
-end
-
--- proxy to parent
-function UIWidget:setRawCursor(x, y)
-    return self._UI and self._UI:setRawCursor(x, y)
-end
-
--- sets cursor relative to this elements requested AABB corner
-function UIWidget:setCursor(x, y)
-    return self._UI and self._UI:setRawCursor(self._AABB[1].x + x, self._AABB[1].y + y)
 end
 
 -- proxy function for setting avail AABB and triggering UI reload
@@ -561,7 +567,7 @@ function UIWidget:isFocused()
 end
 
 function UIWidget:dropFocus()
-    if self._UI and self._UI._focusedWidget == self then
+    if self:isFocused() then
         self._UI._focusedWidget = nil
     end
 end
@@ -611,7 +617,7 @@ end
 
 -- returns widget by ID or nil if it doesn't exist in UI tree
 function UIWidget:getWidgetByID(id)
-    if self._ID == id then
+    if self.style.ID and self.style.ID == id then
         return self
     end
     for _, widget in ipairs(self._childrenByZ) do
@@ -634,45 +640,67 @@ function UIWidget:getRelativeMouse()
 end
 
 --------- EVENTS ---------
+-- if event returns true it is propagated up in responders chain (to the parent or ignored if toplevel)
 
 -- when mouse exits realAABB of this element and passThru=false
 function UIWidget:mouseEntered()
+    return false
 end
 
 -- when mouse enters realAABB of this element and passThru=false
 function UIWidget:mouseExited()
+    return false
 end
 
 -- whenever mouse was clicked on given object
 function UIWidget:mousePressed(x, y, button)
+    return true
 end
 
 -- whenever mouse was released on given object
 function UIWidget:mouseReleased(x, y, button)
+    return true
+end
+
+function UIWidget:mouseMoved(x, y, dx, dy) 
+    return false
 end
 
 -- whenever mouse wheel has been moved: x positive is horizontal right, y positive is vertical up
 function UIWidget:wheelMoved(x, y)
+    return true
 end
 
 -- whenever given keyboard key has been pressed with isRepeat if it was held
 function UIWidget:keyPressed(key, scancode, isRepeat)
+    return false
 end
 
 -- whenever keyboard key was released
 function UIWidget:keyReleased(key, scancode)
+    return false
 end
 
 -- whenever text has been entered by user -> shift+2  produces '@' as text
 function UIWidget:textInput(text)
+    return false
 end
 
 -- whenever file is dropped on this element and passThru=false
 function UIWidget:fileDropped(file)
+    return false
 end
 
 -- whenever directory is dropped on this element and passThru=false; path is the full platform-dependent path to directory
 function UIWidget:directoryDropped(path)
+    return false
+end
+
+-- emits specific event with arguments to the widget and handles propagating through responder's chain
+function UIWidget:emitEvent(eventName, ...)
+    while self[eventName](self, ...) and self._parent ~= self do
+        self = self._parent
+    end
 end
 
 --------------------------

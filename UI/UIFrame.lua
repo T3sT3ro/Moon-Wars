@@ -1,45 +1,43 @@
 local UIFrame = {}
+package.loaded[...] = UIFrame
 
 local UIWidget = require "UI/UIWidget"
 local Typeassert = require "utils/Typeassert"
+
 UIFrame.__index = UIFrame
 
 function UIFrame.isFrame(o)
-    local mt = getmetatable(o)
-    while mt ~= UIFrame do
-        if mt == nil then
-            return false
-        end
-        mt = getmetatable(mt) or (mt.__index ~= mt and mt.__index)
-    end
-    return true
+    return UIWidget.isA(o, UIFrame)
 end
 
 -- default:
----- flags.passThru = true
----- flags.invisible = true iff displayMode not set
+---- UIWidget.style.*
+---- UIWidget.flags.*
 -- extra:
----- style.displayMode = ['b|f|bf']: [b]order [f]ill
-function UIFrame.new(style, flags)
-    style, flags = style or {}, flags or {}
+---- flags.passThru = true
+---- style.invisible = true
+---- style.displayMode = '[bf]': [b]order [f]ill
+function UIFrame.new(style)
+    Typeassert(style, {"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}})
+    style = style or {}
 
-    Typeassert(style.displayMode, {"ANY", "nil", "R:[bf]+"})
-    flags.passThru = flags.passThru or true
-    flags.invisible = not style.displayMode
-    local self = UIWidget(style, flags)
-
+    local self = UIWidget(style)
+    self.style.invisible = style.invisible or style.invisible == nil and true
     self.style.displayMode = style.displayMode or ""
+
+    self.flags.passThru = true
     return setmetatable(self, UIFrame) -- ok since UIFrame's index is UIWidget
 end
 
 function UIFrame:renderer()
     if string.match(self.style.displayMode, "f") then
         love.graphics.setColor(self.style.theme.bg:normalized())
-        love.graphics.rectangle("fill", self:getAABB():normalized())
+        love.graphics.rectangle("fill", 0, 0, self:getWidth(), self:getHeight())
     end
     if string.match(self.style.displayMode, "b") then
+        love.graphics.setLineWidth(5)
         love.graphics.setColor(self.style.theme.fg:normalized())
-        love.graphics.rectangle("line", self:getAABB():normalized())
+        love.graphics.rectangle("line", 0, 0, self:getWidth(), self:getHeight())
     end
 end
 

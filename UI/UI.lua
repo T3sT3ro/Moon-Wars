@@ -10,11 +10,12 @@ local Color = require "UI/Color"
 UI.__index = UI
 
 UI.theme = {
-    Color("#63002dbb"),
-    Color("#8b003fbb"),
-    Color("#c1404dbb"),
-    Color("#ffa535bb"),
-    Color("#ffcd32bb"),
+    bg = Color("#63002dbb"),
+    fg = Color("#8b003fbb"),
+    fg_focus = Color("#c1404dbb"),
+    hilit = Color("#ffa535bb"),
+    hilit_focus = Color("#ffcd32bb"),
+    contrast = Color("#a8f9ff"),
     font = love.graphics.newFont(14)
 }
 
@@ -23,17 +24,17 @@ function UI.isUI(o)
 end
 
 function UI.isID(ID)
-    return type(ID) == "number"
+    return type(ID) == "number" or type(ID) == "string"
 end
 
 function UI:nextID(...)
     UI.UUIDseed = UI.UUIDseed + 1
-    return UI.UUIDseed
+    return "ui#" .. UI.UUIDseed
 end
 
 -- fields:
---- _ID, _index, _widget, _hoveredWidget, _focusedWidget, _clickBegin, _clickEnd
----  origin, size, cursor
+--- ID, _index, _widget, _hoveredWidget, _focusedWidget, _clickBegin, _clickEnd
+---  origin, size
 function UI.new(x, y, width, height)
     local naturalPred = function(x)
         return type(x) == "number" and x >= 0
@@ -43,16 +44,15 @@ function UI.new(x, y, width, height)
     local self =
         setmetatable(
         {
-            _ID = UI.nextID(),
+            ID = UI.nextID(),
             __index = UI,
             _widget = nil,
             _hoveredWidget = nil,
             _focusedWidget = nil,
-            _clickBegin = nil,
-            _clickEnd = nil,
+            _clickBegin = {{}, {}, {}},
+            _clickEnd = {{}, {}, {}},
             origin = {x = x, y = y}, -- on screen real dimensions
-            size = {x = width, y = height}, --- ^^^
-            cursor = {x = x, y = y} -- relative to window's top-left corner, used for drawing UI elements
+            size = {x = width, y = height} --- ^^^
         },
         UI
     )
@@ -71,10 +71,10 @@ function UI:update(dt, ...)
     local hovered = self._widget:getHovered()
     if hovered ~= self._hoveredWidget then -- won't trigger while same widget is hovered or no widget is hovered
         if self._hoveredWidget and not self._hoveredWidget.flags.passThru then
-            self._hoveredWidget:mouseExited()
+            self._hoveredWidget:emitEvent("mouseExited")
         end
         if hovered and not hovered.flags.passThru then
-            hovered:mouseEntered()
+            hovered:emitEvent("mouseEntered")
         end
     end
     self._hoveredWidget = hovered
@@ -83,7 +83,10 @@ end
 
 function UI:draw(...)
     love.graphics.push("all")
+<<<<<<< HEAD
     local old = {love.graphics.getScissor()}
+=======
+>>>>>>> origin/feature/UI
     love.graphics.setScissor(self.origin.x, self.origin.y, self.size.x, self.size.y)
     local oldSetScissorFun = love.graphics.setScissor
 
@@ -92,20 +95,22 @@ function UI:draw(...)
         oldSetScissorFun(self.origin.x, self.origin.y, self.size.x, self.size.y)
         return x and y and w and h and love.graphics.intersectScissor(x, y, w, h)
     end
-    self:setRawCursor(self.origin.x, self.origin.y)
+    love.graphics.translate(self.origin.x, self.origin.y)
     self._widget:draw(...)
     love.graphics.setScissor = oldSetScissorFun
+<<<<<<< HEAD
     love.graphics.setScissor(old[1], old[2], old[3], old[4])
+=======
+>>>>>>> origin/feature/UI
     love.graphics.pop()
 end
 
 function UI:reload()
-    self.cursor.x, self.cursor.y = self.origin.x, self.origin.y
     self:resize(self.origin.x, self.origin.y, self.size.x, self.size.y) -- resize with the same values triggers widget update
     self._hoveredWidget = nil
     self._focusedWidget = nil
-    self._clickBegin = nil
-    self._clickEnd = nil
+    self._clickBegin[1], self._clickBegin[2], self._clickBegin[3] = nil, nil, nil
+    self._clickEnd[1], self._clickEnd[2], self._clickEnd[3] = nil, nil, nil
     self._widget:reload()
 end
 
@@ -116,11 +121,15 @@ function UI:resize(x, y, width, height)
     self.origin.x, self.origin.y = x, y
     self.size.x, self.size.y = max(0, width), max(0, height)
     if self._widget then
-        self._widget:setAvailAABB(self.origin.x, self.origin.y, self.origin.x + self.size.x, self.origin.y + self.size.y)
+        self._widget:setAvailAABB(
+            self.origin.x,
+            self.origin.y,
+            self.origin.x + self.size.x,
+            self.origin.y + self.size.y
+        )
         self._widget:setVisibleAvailAABB(self._widget._availAABB)
         self._widget:reloadLayout()
     end
-    
 end
 
 -- true if gained focus, false otherwise
@@ -150,22 +159,22 @@ function UI:Y()
     return self.origin.y
 end
 
-function UI:width()
+function UI:getWidth()
     return self.size.x
 end
 
-function UI:height()
+function UI:getHeight()
     return self.size.y
 end
 
 -- returns widget over which the mouse was pressed
-function UI:getClickBegin() 
-    return self._clickBegin.widget
+function UI:getClickBegin(button)
+    return self._clickBegin[button] and self._clickBegin[button].widget
 end
 
 -- returns widget over which the mouse was released. Available in mouseReleased events
-function UI:getClickEnd() 
-    return self._clickEnd.widget
+function UI:getClickEnd(button)
+    return self._clickEnd[button] and self._clickEnd[button].widget
 end
 
 -- returns mouse relative to UI
@@ -174,14 +183,6 @@ function UI:getRelativeMouse()
     mx = min(max(self.origin.x, mx), self.origin.x + self.width) - self.origin.x
     my = min(max(self.origin.y, my), self.origin.y + self.height) - self.origin.y
     return mx, my
-end
-
-function UI:getRawCursor()
-    return self.cursor.x,self.cursor.y
-end
-
-function UI:setRawCursor(x, y)
-    self.cursor.x, self.cursor.y = x, y
 end
 
 -- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null
@@ -194,8 +195,8 @@ function UI:getWidget(ID)
     return self._widget and UI._widget:getWidgetByID(ID)
 end
 
-function UI:getHoveredID()
-    return self._hoveredWidget and self._hoveredWidget._ID
+function UI:getHovered()
+    return self._hoveredWidget
 end
 
 --============EVENTS============--
@@ -205,53 +206,60 @@ local function mousePressedEvt(ui, x, y, button)
     if widget then
         if widget ~= ui._focusedWidget then
             if ui._focusedWidget then
-                ui._focusedWidget:dropFocus()
+                ui._focusedWidget:requestDropFocus()
             end
         end
-        widget:mousePressed(x, y, button)
+        widget:emitEvent("mousePressed", x, y, button)
     elseif ui._focusedWidget then -- outside of any widget
         ui._focusedWidget:dropFocus()
     end
-    ui._clickBegin = {widget = widget, x = x, y = y}
+    ui._clickBegin[button] = {widget = widget, x = x, y = y}
 end
 
 -- if any widget is focused, then release is send back to focused, otherwise to visible element
 local function mouseReleasedEvt(ui, x, y, button)
     local targetWidget = ui:getWidgetAt(x, y, true) -- target is a solid widget
-    ui._clickEnd = {widget = targetWidget, x = x, y = y}
+    ui._clickEnd[button] = {widget = targetWidget, x = x, y = y}
     if ui._focusedWidget then
-        ui._focusedWidget:mouseReleased(x, y, button)
+        ui._focusedWidget:emitEvent("mouseReleased", x, y, button)
     elseif targetWidget then
-        targetWidget:mouseReleased(x, y, button)
+        targetWidget:emitEvent("mouseReleased", x, y, button)
     end
-    ui._clickEnd = nil
-    ui._clickBegin = nil
+    ui._clickEnd[button] = nil
+    ui._clickBegin[button] = nil
 end
 
 local function wheelMovedEvt(ui, x, y)
     if ui._hoveredWidget then
-        ui._hoveredWidget:wheelMoved(x, y)
+        ui._hoveredWidget:emitEvent("wheelMoved", x, y)
+    end
+end
+
+-- sent on mouse move to the focused widget only
+local function mouseMovedEvt(ui, x, y, dx, dy)
+    if ui._focusedWidget then
+        ui._focusedWidget:emitEvent("mouseMoved", x, y, dx, dy)
     end
 end
 
 -- can override, currently captures are active for focused element
 function UI:keyPressedEvt(key, scancode, isrepeat)
     if self._focusedWidget then
-        self._focusedWidget:keyPressed(key, scancode, isrepeat)
+        self._focusedWidget:emitEvent("keyPressed", key, scancode, isrepeat)
     end
 end
 
 -- can override, currently captures are active for focused element
 function UI:keyReleasedEvt(key, scancode)
     if self._focusedWidget then
-        self._focusedWidget:keyReleased(key, scancode)
+        self._focusedWidget:emitEvent("keyReleased", key, scancode)
     end
 end
 
 -- captures only for focused widget
 local function textInputEvt(ui, text)
     if ui._focusedWidget then
-        ui._focusedWidget:textInput(text)
+        ui._focusedWidget:emitEvent("textInput", text)
     end
 end
 
@@ -261,15 +269,15 @@ local function fileDirDroppedEvt(ui, file, isDir)
     local targetWidget = ui:getWidgetAt(mx, my, true)
     if isDir then
         if ui._focusedWidget then
-            ui._focusedWidget:directoryDropped(file)
+            ui._focusedWidget:emitEvent("directoryDropped", file)
         elseif targetWidget then
-            targetWidget:directoryDropped(file)
+            targetWidget:emitEvent("directoryDropped", file)
         end
     else
         if ui._focusedWidget then
-            ui._focusedWidget:fileDropped(file)
+            ui._focusedWidget:emitEvent("fileDropped", file)
         elseif targetWidget then
-            targetWidget:fileDropped(file)
+            targetWidget:emitEvent("fileDropped", file)
         end
     end
 end
@@ -286,6 +294,9 @@ function UI:getEventHandlers()
     end
     events.wheelmoved = function(x, y)
         wheelMovedEvt(self, x, y)
+    end
+    events.mousemoved = function(x, y, dx, dy)
+        mouseMovedEvt(self, x, y, dx, dy)
     end
     events.keypressed = function(key, scancode, isrepeat)
         self:keyPressedEvt(key, scancode, isrepeat)

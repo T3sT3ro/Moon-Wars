@@ -1,38 +1,39 @@
 local UIButton = {}
+package.loaded[...] = UIButton
 
 local UIWidget = require "UI/UIWidget"
 local UIFrame = require "UI/UIFrame"
+local Color = require "UI/Color"
 local Typeassert = require "utils/Typeassert"
 local min, max = math.min, math.max
 
 UIButton.__index = UIButton
+
 function UIButton.isButton(o)
-    local mt = getmetatable(o)
-    while mt ~= UIFrame do
-        if mt == nil then
-            return false
-        end
-        mt = getmetatable(mt) or (mt.__index ~= mt and mt.__index)
-    end
-    return true
+    return UIWidget.isA(o, UIButton)
 end
 
 -- default:
----- style.*
+---- UIWidget.style.*
+---- UIWidget.flags.*
 -- extra:
----- style.contentAllign = {x='left|center|right', y='up|center|down'}
----- flags.enable = [true|false] - button behaves like checkbox
+---- style.contentAllign = {[x='left|center|right'], [y='up|center|down']}
+---- flags.enable = true iff type=='checkbox'
+---- callback = function triggered when button clicked
 
-function UIButton.new(style, type, content, callback)
+-- type = {nil|'checkbox'|'normal'}   content = love Image or love Text
+function UIButton.new(type, style, content, callback)
+    Typeassert(
+        {type, style, content, callback},
+        {{"ANY", "nil", "R:checkbox", "R:normal"}, "nil|table", "nil|userdata|string", "nil|function"}
+    )
     style = style or {}
     local self = UIWidget(style)
-    Typeassert({type, callback},{{"ANY", "nil", "R:checkbox", "R:normal"}, "nil|function"})
     self.flags.enable = type == "checkbox"
     self.clickDuration = 0
-    self.pressed = false -- pressed and held
     self.enabled = false -- checkbox
     self.buttonClicked = callback -- callback setup
-    self.contentFrame = UIWidget({}, {invisible = false, passThru = true})
+    self.contentFrame = UIWidget({invisible = false}, {passThru = true})
     self:addWidget(self.contentFrame)
 
     setmetatable(self, UIButton)
@@ -41,9 +42,9 @@ function UIButton.new(style, type, content, callback)
 end
 
 local function contentPred(o)
-    return o == nil or (o.typeOf and (o:typeOf("Image") or o:typeOf("Text")))
+    return o == nil or type(o) == string or (o.typeOf and (o:typeOf("Image") or o:typeOf("Text")))
 end
-
+-- used to change the content of a button. content can be love Text or love Image for now
 function UIButton:setContent(content, contentAllign)
     Typeassert(
         {content, contentAllign},
@@ -59,16 +60,20 @@ function UIButton:setContent(content, contentAllign)
             }
         }
     )
+    if type(content) == "string" then
+        content = love.graphics.newText(self.style.theme.font, content)
+    end
     if content then -- FIXME: expand to drawable ?
         self.contentFrame.flags.hidden = false
-        self.contentFrame.style.size.x = (contentAllign and contentAllign.x) or "center"
-        self.contentFrame.style.size.y = (contentAllign and contentAllign.y) or "center"
+        self.contentFrame.style.allign.x = (contentAllign and contentAllign.x) or "center"
+        self.contentFrame.style.allign.y = (contentAllign and contentAllign.y) or "center"
         local width, height = max(content:getWidth(), 1), max(content:getHeight(), 1)
         self.contentFrame:resize(width, height)
 
         self.contentFrame.drawable = content
         self.contentFrame.renderer = function(self, ...)
-            love.graphics.draw(self.drawable, self:getRawCursor())
+            love.graphics.setColor(self.style.theme.content:normalized())
+            love.graphics.draw(self.drawable, 0, 0)
         end
     else
         self.contentFrame.flags.hidden = true
@@ -76,26 +81,40 @@ function UIButton:setContent(content, contentAllign)
     end
 end
 
+function UIButton:getCallback()
+    return self.buttonClicked
+end
+
 -- @override
 function UIButton:mousePressed(x, y, button)
     if button == 1 and self:requestFocus() then
-        self.pressed = true
+        self.clickDuration = 0
+    end
+    if button ~= 1 then
+        return true
     end
 end
 
 -- @override
 function UIButton:mouseReleased(x, y, button)
     if button == 1 then
-        if self:getUI():getClickBegin() == self and self:getUI():getClickEnd() == self then
+        if self:isPressed() and self:getUI():getClickEnd(button) == self then
             if self.flags.enable then
                 self.enabled = not self.enabled
             end
             self:buttonClicked() -- emit event
         end
-        self.pressed = false
         self.clickDuration = 0
         self:dropFocus()
     end
+    if button ~= 1 then
+        return true
+    end
+end
+
+function UIButton:requestDropFocus()
+    self.clickDuration = 0
+    self:dropFocus()
 end
 
 function UIButton:updater(dt, ...)
@@ -103,24 +122,24 @@ function UIButton:updater(dt, ...)
         self.clickDuration = self.clickDuration + dt
         self:buttonHeld(self.clickDuration)
     end
+    if self:isEnabled() or self:isPressed() then
+        self.style.theme.body = self.style.theme.fg_focus
+        self.style.theme.content = self.style.theme.hilit_focus
+    elseif self:isHovered() then
+        self.style.theme.body = self.style.theme.fg
+        self.style.theme.content = self.style.theme.hilit
+    else
+        self.style.theme.body = self.style.theme.bg
+        self.style.theme.content = self.style.theme.fg_focus
+    end
+    if self.contentFrame.drawable and self.contentFrame.drawable:typeOf("Image") then
+        self.style.theme.content = Color("#ffffff")
+    end
 end
 
 function UIButton:renderer()
-    local body
-    local content
-    if self:isEnabled() or self:isPressed() then
-        body = self.style.theme.fg_focus
-        content = self.style.theme.hilit_focus
-    elseif self:isHovered() then
-        body = self.style.theme.fg
-        content = self.style.theme.hilit
-    else
-        body = self.style.theme.bg
-        content = self.style.theme.fg_focus
-    end
-    love.graphics.setColor(body:normalized())
-    love.graphics.rectangle("fill", self:getAABB():normalized())
-    love.graphics.setColor(content:normalized())
+    love.graphics.setColor(self.style.theme.body:normalized())
+    love.graphics.rectangle("fill", 0, 0, self:getWidth(), self:getHeight())
 end
 
 function UIButton:getClickDuration()
@@ -129,7 +148,7 @@ end
 
 -- true iff mouse is held and it started over button
 function UIButton:isPressed()
-    return self.pressed
+    return self._UI:getClickBegin(1) == self
 end
 
 -- true if enabled, in checkbox mode
