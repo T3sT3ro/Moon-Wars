@@ -9,12 +9,12 @@ local GUI = UI(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 local MainFrame = UIFrame()
 local StartGameBttn =
     UIButton(
+    "normal",
     {
         size = {x = "40%", y = StartGameText:getHeight() + 80},
         origin = {y = -70},
         allign = {x = "center"}
     },
-    "normal",
     StartGameText,
     function()
         StateManager.load(GameState.name)
@@ -22,12 +22,12 @@ local StartGameBttn =
 )
 local ExitBttn =
     UIButton(
+    "normal",
     {
         size = {x = "40%", y = StartGameText:getHeight() + 80},
         origin = {y = 70},
         allign = {x = "center"}
     },
-    "normal",
     love.graphics.newText(font, "Exit"),
     function()
         love.event.quit()

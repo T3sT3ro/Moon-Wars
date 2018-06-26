@@ -22,7 +22,7 @@ local red = Color("#ff1b2b")
 local click = {start = nil, stop = nil}
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
 ResourceManager.load("font.monospace12", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 12)
-ResourceManager.load("mage", "mage", "png", "resources", "image")
+ResourceManager.load("mage", "Unit", "png", "resources", "image")
 font = ResourceManager.get("font.monospace24")
 font12 = ResourceManager.get("font.monospace12")
 mageimg = ResourceManager.get("mage")

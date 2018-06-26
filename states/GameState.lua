@@ -5,14 +5,17 @@ local UI = require("UI/UI")
 local UIButton = require("UI/UIButton")
 local UIFrame = require("UI/UIFrame")
 local UIWidget = require("UI/UIWidget")
+local UIScrollPane = require("UI/UIScrollPane")
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
 local font = ResourceManager.get("font.monospace24")
 local GUI = UI(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 local MainFrame = UIWidget()
+local ScrollMap = UIScrollPane({virtualSize = {x=20*32, y=20*32}},{scroll = {x=true, y=true}})
 local MapFrame = UIWidget({allign = {x = "center"},size = {x = 20*32, y = 20*32}})
 MapFrame.renderer = manager.draw
 MapFrame.mousePressed = manager.mousePressed
-MainFrame:addWidget(MapFrame)
+ScrollMap:addWidget(MapFrame)
+MainFrame:addWidget(ScrollMap)
 GUI:setWidget(MainFrame)
 local GameState = {}
 GameState.name = "GameState"
@@ -66,9 +69,7 @@ function GameState.update(dt)
 end
 
 function GameState.draw()
-    local t = MapFrame:getAABB()[1]
-    GUI:draw(t.x,t.y)
-    love.graphics.print(tostring(t.x).." "..tostring(t.y))
+    GUI:draw(0,0)
     --manager.draw(0)
 end
 
