@@ -84,7 +84,19 @@ local function move(path)
 end
 
 local function gather(unit, logic, map)
-
+    for x = 1, 20 do
+        for y = 1, 20 do
+            local actor = map.getActorByStat(x, y, "itemType")
+            if actor then
+                local path = findPath(map, unit.x, unit.y, actor.x, actor.y, 1)
+                if path then
+                    move(path)
+                    doAction("pickup", actor.name, x, y)
+                    return
+                end
+            end
+        end
+    end
 end
 
 local function attack(unit, logic, map)
@@ -105,7 +117,11 @@ end
 
 function AI.makeMove(unit, logic, map)
     unit:debugInfo()
-    attack(unit, logic, map)
+    if unit.id % 2 == 0 then
+        attack(unit, logic, map)
+    else
+        gather(unit, logic, map)
+    end
     doAction("endTurn")
 end
 
