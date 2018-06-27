@@ -6,17 +6,24 @@ local UIButton = require("UI/UIButton")
 local UIFrame = require("UI/UIFrame")
 local UIWidget = require("UI/UIWidget")
 local UIScrollPane = require("UI/UIScrollPane")
+local UIProgressBar = require("UI/UIProgressBar")
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
 local font = ResourceManager.get("font.monospace24")
 local GUI = UI(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-local MainFrame = UIWidget()
-local ScrollMap = UIScrollPane({virtualSize = {x=20*64, y=20*64}},{scroll = {x=true, y=true}})
-local MapFrame = UIWidget({allign = {x = "center"},size = {x = 20*64, y = 20*64}})
+local MainFrame = UIFrame({margin={all=2}, invisible=false, displayMode="bf"})
+GUI:setWidget(MainFrame)
+local logic = manager.getLogic()
+
+local HPBar = UIProgressBar({size = {x='20%', y=20}, allign={x="left",y="up"},showValue=true, format="HP: %d"}, 0, 0, 100)
+HPBar.updater = function(self, dt) self.value = logic.getCurUnit().health end
+MainFrame:addWidget(HPBar)
+
+local ScrollMap = UIScrollPane({origin={x='20%'}, size={x='80%'},allign={x="left", y="up"}, virtualSize = {x=20*64, y=20*64}},{scroll = {x=true, y=true}})
+local MapFrame = UIWidget({size = {x = 20*64, y = 20*64}})
 MapFrame.renderer = manager.draw
 MapFrame.mousePressed = manager.mousePressed
-ScrollMap:addWidget(MapFrame)
 MainFrame:addWidget(ScrollMap)
-GUI:setWidget(MainFrame)
+ScrollMap:addWidget(MapFrame)
 local GameState = {}
 GameState.name = "GameState"
 local oldResize 
@@ -30,7 +37,8 @@ function GameState.init()
         kr = love.keyreleased,
         ti = love.textinput,
         fd = love.filedropped,
-        dd = love.directorydropped
+        dd = love.directorydropped,
+        mm = love.mousemoved
     }
     local handlers = GUI:getEventHandlers()
 
@@ -45,6 +53,7 @@ function GameState.init()
     love.textinput = handlers.textinput
     love.filedropped = handlers.filedropped
     love.directorydropped = handlers.directorydropped
+    love.mousemoved = handlers.mousemoved
     manager.init()
     ui.init()
 end
@@ -59,6 +68,7 @@ function GameState.clear()
     love.textinput = oldHandlers.ti
     love.filedropped = oldHandlers.fd
     love.directorydropped = oldHandlers.dd
+    love.mousemoved = oldHandlers.mm
     manager.clear()
     ui.clear()
 end

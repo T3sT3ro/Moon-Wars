@@ -21,6 +21,9 @@ function GameLogic.getCurUnit()
     return _curUnit
 end
 
+function GameLogic.getCurActionPoints() return _curActionPoints end
+function GameLogic.getMaxActionPoints() return _startActionPoints end
+
 local function createActor(typeName, playerId, name)
     local actor = Factory.create(typeName, playerId, name)
     if _actors[actor.type] == nil then
