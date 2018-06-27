@@ -169,12 +169,14 @@ function UI:getClickEnd(button)
     return self._clickEnd[button] and self._clickEnd[button].widget
 end
 
--- returns mouse relative to UI
-function UI:getRelativeMouse()
-    local mx, my = love.mouse.getX(), love.mouse.getY()
-    mx = min(max(self.origin.x, mx), self.origin.x + self.width) - self.origin.x
-    my = min(max(self.origin.y, my), self.origin.y + self.height) - self.origin.y
-    return mx, my
+-- transforms screen coordinates to local coordinates
+function UI:toLocalCoordinates(x, y)
+    return x - self.origin.x, y - self.origin.y
+end
+
+-- transforms local coordinates to screen coordinates
+function UI:toGlobalCoordinates(x, y)
+    return x + self.origin.x, y + self.origin.y
 end
 
 -- returns widget at absolute x, y or nil if none. compares realAABB, so for 0 sized it is null

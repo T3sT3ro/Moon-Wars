@@ -13,9 +13,9 @@ end
 -- default:
 ---- UIWidget.style.*
 ---- UIWidget.flags.*
--- extra:
----- flags.passThru = true
 ---- style.invisible = true
+---- flags.passThru = true
+-- extra:
 ---- style.displayMode = '[bf]': [b]order [f]ill
 function UIFrame.new(style)
     Typeassert(style, {"ANY", "nil", {displayMode = {"ANY", "nil", "R:[bf]+"}}})
