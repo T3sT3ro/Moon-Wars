@@ -130,7 +130,7 @@ function UI:requestFocus(widget)
         self._focusedWidget = widget
         return true
     else
-        if self._focusedWidget:requestDropFocus() then
+        if self._focusedWidget:requestDropFocus(widget) then -- pass requesting widget for custom logics
             self._focusedWidget = widget
             return true
         else
@@ -200,7 +200,7 @@ local function mousePressedEvt(ui, x, y, button)
     if widget then
         if widget ~= ui._focusedWidget then
             if ui._focusedWidget then
-                ui._focusedWidget:requestDropFocus()
+                ui._focusedWidget:requestDropFocus(widget)
             end
         end
         widget:emitEvent("mousePressed", x, y, button)

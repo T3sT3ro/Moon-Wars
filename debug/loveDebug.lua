@@ -19,16 +19,24 @@ function love.graphics.getHeight()
     return love.graphics.height
 end
 function love.graphics.points(...)
-    print("love.graphics.points():", ...)
+    print("love.graphics.points() <translation is " .. love.translate.x .. ", " .. love.translate.y .. ">:", ...)
 end
-function love.graphics.rectangle(...)
-    print("love.graphics.rectangle():", ...)
+function love.graphics.rectangle(mode, x, y, w, h)
+    print(
+        string.format("love.graphics.rectangle('%s', %f, %f, %f %f):", mode, x, y, w, h),
+        "~>",
+        x + love.translate.x,
+        y + love.translate.y,
+        w,
+        h
+    )
 end
-function love.graphics.draw(...)
-    print("love.graphics.draw():", ...)
+function love.graphics.draw(drawable, x, y, ...)
+    print("love.graphics.draw():", drawable, x, y, ..., "~>", x + love.translate.x, y + love.translate.y)
 end
-function love.graphics.print(...)
-    print("love.graphics.print():", ...)
+function love.graphics.print(text, x, y, ...)
+    x, y = x or 0, y or 0
+    print("love.graphics.print():", text, x, y, ..., "~>", text, x + love.translate.x, y + love.translate.y)
 end
 function love.graphics.newImage(...)
     print("love.graphics.newImage():", ...)
@@ -159,7 +167,7 @@ function love.graphics.pop(x)
     table.remove(love.stack)
 end
 function love.graphics.translate(dx, dy)
-    print(string.format("love.graphics.translate(%d, %d):", dx, dy))
+    print(string.format("love.graphics.translate(%d, %d):", dx, dy, "~>", love.translate.x + dx, love.translate.y + dy))
     love.translate.x = love.translate.x + dx
     love.translate.y = love.translate.y + dy
 end
@@ -175,5 +183,12 @@ function love.mouse.getRelativeMode(set)
     love.relativeMode = set
 end
 function love.graphics.line(x1, y1, x2, y2)
-    print(string.format("love.graphics.line(%d, %d, %d, %d):", x1, y1, x2, y2))
+    print(
+        string.format("love.graphics.line(%d, %d, %d, %d):", x1, y1, x2, y2),
+        "~>",
+        x1 + love.translate.x,
+        y1 + love.translate.y,
+        x2 + love.translate.x,
+        y2 + love.translate.y
+    )
 end
