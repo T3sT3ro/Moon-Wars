@@ -9,7 +9,7 @@ local GameManager = {}
 
 function GameManager.init()
     map.init()
-    logic.init(--ResourceManager.get("AI.example"))
+    logic.init(--ResourceManager.get("AI.example")
 )
 end
 
@@ -103,6 +103,7 @@ end
 
 function GameManager.draw(self,offsetX,offsetY)
     map.draw(64-offsetX,64-offsetY)
+    love.graphics.print("AP: " .. tostring(logic.getCurAP()),0,0)
 end
 
 local function pressed(self,x,y,button)

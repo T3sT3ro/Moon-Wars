@@ -17,6 +17,10 @@ local _startActionPoints = 10
 local _curActionPoints = _startActionPoints
 local _actors = {}
 
+function GameLogic.getCurAP()
+    return _curActionPoints
+end
+
 function GameLogic.getCurUnit()
     return _curUnit
 end
