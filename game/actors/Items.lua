@@ -39,7 +39,6 @@ local Items =
     {
         name = "sword",
         itemType = "weapon", 
-        assetName = "dagger2", 
         onUse = changeStat("attack", 20),
         toCraft = craftMat("wood", 1, "stone", 2)
     },
@@ -75,7 +74,7 @@ local Items =
 
     {
         name = "bigHealthPotion",
-        assetName = "potion", 
+        assetName = "potionBig", 
         itemType = "potion",  
         onUse = changeStat("health", 150),
         toCraft = craftMat("crystal", 2)
