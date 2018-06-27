@@ -172,7 +172,7 @@ end
 
 -- true iff mouse is held and it started over ScrollPane and drag scroll enabled
 function UIScrollPane:isDragged()
-    return self._UI:getClickBegin(3) == self and self.flags.scrollWithDrag
+    return self.flags.scrollWithDrag and self:isFocused()
 end
 
 return setmetatable(

@@ -9,8 +9,13 @@ local GameManager = {}
 
 function GameManager.init()
     map.init()
+<<<<<<< HEAD
     logic.init(--ResourceManager.get("AI.example")
 )
+=======
+    logic.init()
+ --ResourceManager.get("AI.example"))
+>>>>>>> 7698c60cb5e132ab4d81b37d080a241774631284
 end
 
 function GameManager.clear()
@@ -18,15 +23,19 @@ function GameManager.clear()
     map.clear()
 end
 
+function GameManager.getLogic()
+    return logic
+end
+
 local function moveHandler(key)
     local dx, dy = 0, 0
-    if key == 'w' then
-        dy = -1        
-    elseif key == 's' then
+    if key == "w" then
+        dy = -1
+    elseif key == "s" then
         dy = 1
-    elseif key == 'a' then
+    elseif key == "a" then
         dx = -1
-    elseif key == 'd' then
+    elseif key == "d" then
         dx = 1
     end
 
@@ -55,7 +64,7 @@ end
 
 local function pickupHandler()
     print("pickup handler")
-    
+
     local curUnit = logic.getCurUnit()
     local dx = {1, -1, 0, 0}
     local dy = {0, 0, -1, 1}
@@ -77,15 +86,15 @@ local function infoHandler()
     logic.getCurUnit():debugInfo()
 end
 
-local _inputHandlers = 
-{
-    wsad =  moveHandler,
+local _inputHandlers = {
+    wsad = moveHandler,
     e = endTurnHandler,
     q = attackHandler,
     p = pickupHandler,
     c = craftHandler,
     i = infoHandler
 }
+ --
 
 --[[
     function love.keypressed( key, isrepeat)
@@ -95,37 +104,49 @@ local _inputHandlers =
         end
     end
 end
-]]--    
-
-function GameManager.update(dt)
+]] function GameManager.update(
+    dt)
     map.update(dt)
 end
 
+<<<<<<< HEAD
 function GameManager.draw(self,offsetX,offsetY)
     map.draw(64-offsetX,64-offsetY)
     love.graphics.print("AP: " .. tostring(logic.getCurAP()),0,0)
+=======
+function GameManager.draw(self, offsetX, offsetY)
+    map.draw(64 - offsetX, 64 - offsetY)
+>>>>>>> 7698c60cb5e132ab4d81b37d080a241774631284
 end
 
-local function pressed(self,x,y,button)
-    local hp_thing = map.getActorByStat(x,y,"health")
-    if button == 1 then logic.doAction("move",x,y)
-    ---[[
-    elseif hp_thing ~= nil then 
-        if hp_thing ==logic.getCurUnit() then logic.doAction("drop", "wood")
-        elseif hp_thing.type == "Nexus" then 
-            if hp_thing.playerId == logic.getCurUnit().playerId then logic.doAction("craft", "dagger")
-            else logic.doAction("attack",x,y) 
+local function pressed(self, x, y, button)
+    local hp_thing = map.getActorByStat(x, y, "health")
+    if button == 1 then
+        ---[[
+        logic.doAction("move", x, y)
+    elseif hp_thing ~= nil then
+        if hp_thing == logic.getCurUnit() then
+            logic.doAction("drop", "wood")
+        elseif hp_thing.type == "Nexus" then
+            if hp_thing.playerId == logic.getCurUnit().playerId then
+                logic.doAction("craft", "dagger")
+            else
+                logic.doAction("attack", x, y)
             end
-        else logic.doAction("attack",x,y)
+        else
+            logic.doAction("attack", x, y)
         end
-    elseif map.getActorByType(x,y,"Resource") ~= nil then 
+    elseif map.getActorByType(x, y, "Resource") ~= nil then
         for _, item in ipairs(Items) do
             logic.doAction("pickup", item.name, x, y)
         end
-    else logic.doAction("endTurn") end
+    else
+        logic.doAction("endTurn")
+    end
     --]]
 end
 
+<<<<<<< HEAD
 function GameManager.mousePressed(self,X, Y, button)
     if button == 3 then return true end
     local Ox = self:getAABB()[1].x
@@ -135,33 +156,123 @@ function GameManager.mousePressed(self,X, Y, button)
     if button == 1 then logic.doAction("move",x,y)
     elseif button == 2 then
         local hp_thing = map.getActorByStat(x,y,"health")
+=======
+function GameManager.mousePressed(self, X, Y, button)
+    if button == 3 then
+        return true
+    end
+    local Ox = self:getAABB()[1].x
+    local Oy = self:getAABB()[1].y
+    local x = math.floor((X - Ox) / 64) + 1
+    local y = math.floor((Y - Oy) / 64) + 1
+    if button == 1 then
+        logic.doAction("move", x, y)
+    else
+        local hp_thing = map.getActorByStat(x, y, "health")
+>>>>>>> 7698c60cb5e132ab4d81b37d080a241774631284
         local menu = UIContextMenu({ID = "contextMenu"})
-        menu:addOption("End Turn", function(self) logic.doAction("endTurn") end)
-        if hp_thing ~= nil then 
-            if hp_thing ==logic.getCurUnit() then 
-                menu:addOption("Drop Wood", function(self) logic.doAction("drop", "wood") end)
-                menu:addOption("Drop Stone", function(self) logic.doAction("drop", "stone") end)
-                menu:addOption("Drop Crystal", function(self) logic.doAction("drop", "crystal") end)
-            elseif hp_thing.type == "Nexus" then 
+        menu:addOption(
+            "End Turn",
+            function(self)
+                logic.doAction("endTurn")
+            end
+        )
+        if hp_thing ~= nil then
+            if hp_thing == logic.getCurUnit() then
+                menu:addOption(
+                    "Drop Wood",
+                    function(self)
+                        logic.doAction("drop", "wood")
+                    end
+                )
+                menu:addOption(
+                    "Drop Stone",
+                    function(self)
+                        logic.doAction("drop", "stone")
+                    end
+                )
+                menu:addOption(
+                    "Drop Crystal",
+                    function(self)
+                        logic.doAction("drop", "crystal")
+                    end
+                )
+            elseif hp_thing.type == "Nexus" then
                 if hp_thing.playerId == logic.getCurUnit().playerId then
-                    menu:addOption("Craft Dagger", function(self) logic.doAction("craft", "dagger") end)
-                    menu:addOption("Craft Sword", function(self) logic.doAction("craft", "sword") end)
-                    menu:addOption("Craft Bow", function(self) logic.doAction("craft", "bow") end)
-                    menu:addOption("Craft Light Armor", function(self) logic.doAction("craft", "lightArmor") end)
-                    menu:addOption("Craft Heavy Armor", function(self) logic.doAction("craft", "heavyArmor") end)
-                    menu:addOption("Craft Small Health Potion", function(self) logic.doAction("craft", "smallHealthPotion") end)
-                    menu:addOption("Craft Big Health Potion", function(self) logic.doAction("craft", "bigHealthPotion") end)
-                else menu:addOption("Attack", function(self) logic.doAction("attack",x,y) end) 
+                    menu:addOption(
+                        "Craft Dagger",
+                        function(self)
+                            logic.doAction("craft", "dagger")
+                        end
+                    )
+                    menu:addOption(
+                        "Craft Sword",
+                        function(self)
+                            logic.doAction("craft", "sword")
+                        end
+                    )
+                    menu:addOption(
+                        "Craft Bow",
+                        function(self)
+                            logic.doAction("craft", "bow")
+                        end
+                    )
+                    menu:addOption(
+                        "Craft Light Armor",
+                        function(self)
+                            logic.doAction("craft", "lightArmor")
+                        end
+                    )
+                    menu:addOption(
+                        "Craft Heavy Armor",
+                        function(self)
+                            logic.doAction("craft", "heavyArmor")
+                        end
+                    )
+                    menu:addOption(
+                        "Craft Small Health Potion",
+                        function(self)
+                            logic.doAction("craft", "smallHealthPotion")
+                        end
+                    )
+                    menu:addOption(
+                        "Craft Big Health Potion",
+                        function(self)
+                            logic.doAction("craft", "bigHealthPotion")
+                        end
+                    )
+                else
+                    menu:addOption(
+                        "Attack",
+                        function(self)
+                            logic.doAction("attack", x, y)
+                        end
+                    )
                 end
-            else menu:addOption("Attack", function(self) logic.doAction("attack",x,y) end) 
+            else
+                menu:addOption(
+                    "Attack",
+                    function(self)
+                        logic.doAction("attack", x, y)
+                    end
+                )
             end
         end
-        if map.getActorByType(x,y,"Item") ~= nil then menu:addOption("Pickup", function(self) for _, item in ipairs(Items) do
-            logic.doAction("pickup", item.name, x, y)
-            if item.onUse ~= nil then logic.doAction("use", item.name)end
-        end end) end
+        if map.getActorByType(x, y, "Item") ~= nil then
+            menu:addOption(
+                "Pickup",
+                function(self)
+                    for _, item in ipairs(Items) do
+                        logic.doAction("pickup", item.name, x, y)
+                        if item.onUse ~= nil then
+                            logic.doAction("use", item.name)
+                        end
+                    end
+                end
+            )
+        end
         self:addWidget(menu)
-        menu:spawn(X,Y)
+        menu:spawn(X, Y)
     end
 end
 
