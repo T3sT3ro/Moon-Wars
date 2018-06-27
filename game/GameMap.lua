@@ -11,7 +11,7 @@ local res = {}
 res[1] = {}
 res[2] = {}
 
-local mapType = {"grass1","grass2","grass_flower2","grass_flower1","stone_tile","water"}
+local mapType = {"grass1","grass2","grass_flower2","grass_flower1","stone_tile","water","water2","water3"}
 --[[
     map types:
     1 - grass
@@ -108,7 +108,8 @@ function GameMap.init()
                 elseif tex < 18 then tex = 3
                 else tex = 4
                 end
-            else tex = tex + 3
+            elseif tex == 2 then tex = 5
+            else tex = rng(3) + 5
             end
             map[i][j].tex = tex
         end
@@ -205,10 +206,9 @@ local time = 0.0
 
 function GameMap.update(dt)
     time = time + dt
-    if time > 2.25 then time = time - 2.25 end
-    if time < 0.75 then mapType[6] = "water"
-    elseif time < 1.5 then mapType[6] = "water2"
-    else mapType[6] = "water3"
+    if time > 0.75 then 
+        time = time - 0.75
+        mapType[6],mapType[7],mapType[8] = mapType[7],mapType[8],mapType[6]
     end 
 end
 

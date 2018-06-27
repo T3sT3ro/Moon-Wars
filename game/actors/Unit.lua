@@ -87,7 +87,7 @@ end
 
 function Unit:draw(offsetX,offsetY)
     if self.isCurUnit then
-        love.graphics.setColor(1, 1, 0, 1)
+        love.graphics.setColor(1, 0.5, 0, 0.7)
     end
     Actor.draw(self,offsetX,offsetY)    
     love.graphics.print(self.health, self.x*64-offsetX, self.y*64-offsetY)

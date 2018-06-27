@@ -126,12 +126,13 @@ local function pressed(self,x,y,button)
 end
 
 function GameManager.mousePressed(self,X, Y, button)
+    if button == 3 then return true end
     local Ox = self:getAABB()[1].x
     local Oy = self:getAABB()[1].y
     local x = math.floor((X-Ox)/64)+1
     local y = math.floor((Y-Oy)/64)+1
     if button == 1 then logic.doAction("move",x,y)
-    else 
+    elseif button == 2 then
         local hp_thing = map.getActorByStat(x,y,"health")
         local menu = UIContextMenu({ID = "contextMenu"})
         menu:addOption("End Turn", function(self) logic.doAction("endTurn") end)

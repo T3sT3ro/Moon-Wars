@@ -25,6 +25,7 @@ function GameState.init()
     oldHandlers = {
         mp = love.mousepressed,
         mr = love.mousereleased,
+        mw = love.mousemoved,
         wm = love.wheelmoved,
         kp = love.keypressed,
         kr = love.keyreleased,
@@ -39,6 +40,7 @@ function GameState.init()
     end
     love.mousepressed = handlers.mousepressed
     love.mousereleased = handlers.mousereleased
+    love.mousemoved = handlers.mousemoved
     love.wheelmoved = handlers.wheelmoved
     love.keypressed = handlers.keypressed
     love.keyreleased = handlers.keyreleased
@@ -53,6 +55,7 @@ function GameState.clear()
     love.resize = oldResize
     love.mousepressed = oldHandlers.mp
     love.mousereleased = oldHandlers.mr
+    love.mousemoved = oldHandlers.mw
     love.wheelmoved = oldHandlers.wm
     love.keypressed = oldHandlers.kp
     love.keyreleased = oldHandlers.kr

@@ -186,7 +186,7 @@ local function move(x, y)
     end
     return false
 end
-helper.addAction("move", move, {"number", "number"}, 0)
+helper.addAction("move", move, {"number", "number"}, 1)
 
 local function attack(x, y)
     if map.distance(_curUnit.x, _curUnit.y, x, y) <= _curUnit.range then
@@ -208,7 +208,7 @@ local function attack(x, y)
     end
     return false
 end
-helper.addAction("attack", attack, {"number", "number"}, 0)
+helper.addAction("attack", attack, {"number", "number"}, 2)
 
 local function getNexus(playerId)
     local nexuses = _actors["Nexus"]
@@ -239,7 +239,7 @@ local function craft(name)
     map.addActor(item)
     return true
 end
-helper.addAction("craft", craft, {"string"}, 1)
+helper.addAction("craft", craft, {"string"}, 3)
 
 local function pickup(name, x, y)
     local item = map.getActorByName(x, y, name)
