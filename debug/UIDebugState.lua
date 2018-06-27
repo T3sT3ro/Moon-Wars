@@ -9,6 +9,7 @@ local UIButton = require "UI/UIButton"
 local UIProgressBar = require "UI/UIProgressBar"
 local UILabel = require "UI/UILabel"
 local UIScrollPane = require "UI/UIScrollPane"
+local UIContextMenu = require "UI/UIContextMenu"
 
 local Color = require "UI/Color"
 local AABB = require "UI/AABB"
@@ -79,7 +80,11 @@ local imgbttn =
 bttn.buttonHeld = function(self, delta)
     print("HELD for " .. delta)
 end
+menu = UIContextMenu({ID = "contextMenu"})
 
+
+menu:addOption("this is the first option", function(self) print("context first clicked") end)
+menu:addOption("second option", function(self) print("context second clicked") end)
 progress.delta = 1
 progress.updater = function(self, dt)
     if self.value == 120 then
@@ -98,6 +103,7 @@ body:addWidget(scroll)
 scroll:addWidget(f0)
 scroll:addWidget(scrollLabel)
 f0:addWidget(f1)
+f0:addWidget(menu)
 f1:addWidget(f2)
 f1:addWidget(f3)
 f3:addWidget(f4)
@@ -185,7 +191,7 @@ for _, v in ipairs({f0, f1, f2, f3, f4, f5}) do
 end
 
 f0.mousePressed = function (self, x, y, button) 
-    print(button, "->", self:toLocalCoordinates(x, y))
+    menu:spawn(x, y)
 end
 
 function UIDebugState.init()

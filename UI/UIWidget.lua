@@ -286,7 +286,7 @@ function UIWidget.new(style, flags)
                     (self._parent and self._parent ~= self and self._parent.style.theme) or
                     (self._UI and self._UI.theme)
                 if k == "font" then
-                    return (k and self._UI and theme[k]) or love.graphics.newFont(10)
+                    return (k and self._UI and theme[k]) or love.graphics.newFont(12)
                 else
                     return (k and self._UI and Color(theme[k])) or Color(0, 0, 0) -- default is black
                 end
@@ -458,12 +458,27 @@ function UIWidget:reloadLayout(doReload) -- doReload when any of ancestors was u
     end
 end
 
+-- reloads required variables - currently theme
+function UIWidget:reloadSelf(...)
+    if self._UI then -- update theme
+        local globalTheme = self._UI.theme
+        local theme = self.style.theme
+        theme.bg = globalTheme.bg
+        theme.fg = globalTheme.fg
+        theme.fg_focus = globalTheme.fg_focus
+        theme.hilit = globalTheme.hilit
+        theme.hilit_focus = globalTheme.hilit_focus
+        theme.contrast = globalTheme.contrast
+        theme.font = globalTheme.font
+    end
+end
 -- drops focus, reset scroll, clear buffers etc.
 --- quarantee - availAABB is always set properly
 function UIWidget:reload(...)
     self._UI = self._parent._UI
     self:dropFocus()
     self:reloadLayout(true)
+    self:reloadSelf()
     for _, v in ipairs(self._childrenByZ) do
         v:reload(...)
     end
@@ -569,7 +584,7 @@ function UIWidget:requestFocus()
 end
 
 -- called by other elements to drop the focus - true if focus drop was a success, false otherwise
-function UIWidget:requestDropFocus()
+function UIWidget:requestDropFocus(requestingWidget)
     self:dropFocus()
     return true
 end
@@ -621,11 +636,17 @@ function UIWidget:getWidgetByID(id)
     return nil
 end
 
--- returns mouse relative to this element's AABB or nil,nil if outside bounds of realAABB
+-- returns coordinates relative to this element's AABB or nil,nil if outside bounds of realAABB
 function UIWidget:toLocalCoordinates(x, y)
     return x - self._AABB[1].x, y - self._AABB[1].y
 end
 
+-- returns coordinates relative to available space
+function UIWidget:toRelativeCoordinates(x, y) 
+    return x - self._availAABB[1].x, y - self._availAABB[1].y
+end
+
+-- converts local coordinates to on screen coordinates
 function UIWidget:toGlobalCoordinates(x, y)
     return x + self._AABB[1].x, y + self._AABB[1].y    
 end
