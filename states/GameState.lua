@@ -7,19 +7,77 @@ local UIFrame = require("UI/UIFrame")
 local UIWidget = require("UI/UIWidget")
 local UIScrollPane = require("UI/UIScrollPane")
 local UIProgressBar = require("UI/UIProgressBar")
+local UILabel = require("UI/UILabel")
+
 ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resources/fonts", "font", 24)
-local font = ResourceManager.get("font.monospace24")
+ResourceManager.load("stoneImg", "stone", "png", "resources", "image")
+ResourceManager.load("woodImg", "wood", "png", "resources", "image")
+ResourceManager.load("crystalImg", "crystal", "png", "resources", "image")
+
 local GUI = UI(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
-local MainFrame = UIFrame({margin={all=2}, invisible=false, displayMode="bf"})
+local MainFrame = UIFrame({margin={all=2}, invisible=false, displayMode="b"})
 GUI:setWidget(MainFrame)
 local logic = manager.getLogic()
 
-local HPBar = UIProgressBar({size = {x='20%', y=20}, allign={x="left",y="up"},showValue=true, format="HP: %d"}, 0, 0, 100)
-local APBar = UIProgressBar({origin={y=30}, size = {x='20%', y=20}, allign={x="left",y="up"},showValue=true, format="AP: %d"}, 0, 0, 10)
+local Aside = UIFrame({size={x='20%'}, allign={x="left", y="up"}, margin = {all=5}, invisible=false, displayMode="fb"})
+MainFrame:addWidget(Aside)
+
+local HPBar = UIProgressBar({size = {y=20}, allign={x="left",y="up"},showValue=true, format="HP: %d"}, 0, 0, 100)
+local APBar = UIProgressBar({origin={y=30}, size = {y=20}, allign={x="left",y="up"},showValue=true, format="AP: %d"}, 0, 0, 10)
 HPBar.updater = function(self, dt) self.value = logic.getCurUnit().health end
 APBar.updater = function(self, dt) self.value = logic.getCurActionPoints() end
-MainFrame:addWidget(HPBar)
-MainFrame:addWidget(APBar)
+Aside:addWidget(HPBar)
+Aside:addWidget(APBar)
+
+local EQFrame = UIFrame({allign={y="down"},size={y=3*64+4}, margin={all=2}, invisible = false, displayMode= "b"})
+Aside:addWidget(EQFrame)
+local stoneImg, woodImg, crystalImg = ResourceManager.get("stoneImg"), ResourceManager.get("woodImg"), ResourceManager.get("crystalImg")
+local foo = function() end
+local WoodFrame = UIFrame({size={y=woodImg:getHeight()}, allign={y="up"}})
+local WoodEQ = UIButton("normal", {size={x=woodImg:getWidth(), y=woodImg:getHeight()}, allign={x="left",y="up"}}, woodImg, foo)
+local woodLore = UILabel("0", nil)
+
+local StoneFrame = UIFrame({size={y=stoneImg:getHeight()}, allign={y="center"}})
+local StoneEQ = UIButton("normal", {size={x=stoneImg:getWidth(), y=stoneImg:getHeight()}, allign={x="left",y="up"}}, stoneImg, foo)
+local stoneLore = UILabel("0", nil)
+
+local CrystalFrame = UIFrame({size={y=crystalImg:getHeight()}, allign={y="down"}})
+local CrystalEQ = UIButton("normal", {size={x=crystalImg:getWidth(), y=crystalImg:getHeight()}, allign={x="left",y="up"}}, crystalImg, foo)
+local crystalLore = UILabel("0", nil)
+
+EQFrame:addWidget(WoodFrame)
+WoodFrame:addWidget(WoodEQ)
+WoodFrame:addWidget(woodLore)
+
+EQFrame:addWidget(StoneFrame)
+StoneFrame:addWidget(StoneEQ)
+StoneFrame:addWidget(stoneLore)
+
+EQFrame:addWidget(CrystalFrame)
+CrystalFrame:addWidget(CrystalEQ)
+CrystalFrame:addWidget(crystalLore)
+
+woodLore.updater = function(self, dt) 
+    local howmany = 0
+    for _, v in pairs(logic.getCurUnit().equipment) do 
+        if v.name == "wood" then howmany = howmany + 1 end
+    end
+    self:setText(tostring(howmany))
+end
+stoneLore.updater = function(self, dt) 
+    local howmany = 0
+    for _, v in pairs(logic.getCurUnit().equipment) do 
+        if v.name == "stone" then howmany = howmany + 1 end
+    end
+    self:setText(tostring(howmany))
+end
+crystalLore.updater = function(self, dt) 
+    local howmany = 0
+    for _, v in pairs(logic.getCurUnit().equipment) do 
+        if v.name == "crystal" then howmany = howmany + 1 end
+    end
+    self:setText(tostring(howmany))
+end
 
 local ScrollMap = UIScrollPane({origin={x='20%'}, size={x='80%'},allign={x="left", y="up"}, virtualSize = {x=20*64, y=20*64}},{scroll = {x=true, y=true}})
 local MapFrame = UIWidget({size = {x = 20*64, y = 20*64}})

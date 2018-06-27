@@ -9,13 +9,8 @@ local GameManager = {}
 
 function GameManager.init()
     map.init()
-<<<<<<< HEAD
-    logic.init(--ResourceManager.get("AI.example")
-)
-=======
     logic.init()
- --ResourceManager.get("AI.example"))
->>>>>>> 7698c60cb5e132ab4d81b37d080a241774631284
+ --ResourceManager.get("AI.example")
 end
 
 function GameManager.clear()
@@ -94,7 +89,7 @@ local _inputHandlers = {
     c = craftHandler,
     i = infoHandler
 }
- --
+--
 
 --[[
     function love.keypressed( key, isrepeat)
@@ -109,14 +104,8 @@ end
     map.update(dt)
 end
 
-<<<<<<< HEAD
-function GameManager.draw(self,offsetX,offsetY)
-    map.draw(64-offsetX,64-offsetY)
-    love.graphics.print("AP: " .. tostring(logic.getCurAP()),0,0)
-=======
 function GameManager.draw(self, offsetX, offsetY)
     map.draw(64 - offsetX, 64 - offsetY)
->>>>>>> 7698c60cb5e132ab4d81b37d080a241774631284
 end
 
 local function pressed(self, x, y, button)
@@ -146,17 +135,6 @@ local function pressed(self, x, y, button)
     --]]
 end
 
-<<<<<<< HEAD
-function GameManager.mousePressed(self,X, Y, button)
-    if button == 3 then return true end
-    local Ox = self:getAABB()[1].x
-    local Oy = self:getAABB()[1].y
-    local x = math.floor((X-Ox)/64)+1
-    local y = math.floor((Y-Oy)/64)+1
-    if button == 1 then logic.doAction("move",x,y)
-    elseif button == 2 then
-        local hp_thing = map.getActorByStat(x,y,"health")
-=======
 function GameManager.mousePressed(self, X, Y, button)
     if button == 3 then
         return true
@@ -169,7 +147,6 @@ function GameManager.mousePressed(self, X, Y, button)
         logic.doAction("move", x, y)
     else
         local hp_thing = map.getActorByStat(x, y, "health")
->>>>>>> 7698c60cb5e132ab4d81b37d080a241774631284
         local menu = UIContextMenu({ID = "contextMenu"})
         menu:addOption(
             "End Turn",
