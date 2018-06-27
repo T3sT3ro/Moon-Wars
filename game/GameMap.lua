@@ -216,7 +216,7 @@ function GameMap.draw(offsetX,offsetY)
     --love.graphics.setColor(1,1,1,1)
     for i=1,20 do
         for j=1,20 do
-            love.graphics.draw(ResourceManager.get(mapType[map[i][j].tex]), i*32 - offsetX, j*32-offsetY,0,0.5,0.5)
+            love.graphics.draw(ResourceManager.get(mapType[map[i][j].tex]), i*64 - offsetX, j*64-offsetY,0,1,1)
             for _,v in pairs(map[i][j].actors) do
                 if v.type ~= "Unit" and v.type ~= "Item" then v:draw(offsetX,offsetY) break end
             end

@@ -46,7 +46,7 @@ local Items =
     {
         name = "bow",
         itemType = "weapon",  
-        onUse = changeStat("attack", 10, "range", 1),
+        onUse = changeStat("attack", 10, "range", 2),
         toCraft = craftMat("wood", 3, "stone", 1)
     },
 

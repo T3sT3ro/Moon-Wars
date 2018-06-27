@@ -9,7 +9,8 @@ local GameManager = {}
 
 function GameManager.init()
     map.init()
-    logic.init(ResourceManager.get("AI.example"))
+    logic.init(--ResourceManager.get("AI.example"))
+)
 end
 
 function GameManager.clear()
@@ -101,7 +102,7 @@ function GameManager.update(dt)
 end
 
 function GameManager.draw(self,offsetX,offsetY)
-    map.draw(32-offsetX,32-offsetY)
+    map.draw(64-offsetX,64-offsetY)
 end
 
 local function pressed(self,x,y,button)
@@ -127,8 +128,8 @@ end
 function GameManager.mousePressed(self,X, Y, button)
     local Ox = self:getAABB()[1].x
     local Oy = self:getAABB()[1].y
-    local x = math.floor((X-Ox)/32)+1
-    local y = math.floor((Y-Oy)/32)+1
+    local x = math.floor((X-Ox)/64)+1
+    local y = math.floor((Y-Oy)/64)+1
     if button == 1 then logic.doAction("move",x,y)
     else 
         local hp_thing = map.getActorByStat(x,y,"health")

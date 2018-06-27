@@ -46,7 +46,7 @@ end
 
 function Nexus:draw(offsetX,offsetY)
     Actor.draw(self,offsetX,offsetY)
-    love.graphics.print(self.health, self.x*32-offsetX, self.y*32-offsetY)
+    love.graphics.print(self.health, self.x*64-offsetX, self.y*64-offsetY)
 end
 
 function Nexus:debugInfo()

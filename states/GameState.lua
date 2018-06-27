@@ -10,8 +10,8 @@ ResourceManager.load("font.monospace24", "Inconsolata-Regular", "ttf", "resource
 local font = ResourceManager.get("font.monospace24")
 local GUI = UI(0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 local MainFrame = UIWidget()
-local ScrollMap = UIScrollPane({virtualSize = {x=20*32, y=20*32}},{scroll = {x=true, y=true}})
-local MapFrame = UIWidget({allign = {x = "center"},size = {x = 20*32, y = 20*32}})
+local ScrollMap = UIScrollPane({virtualSize = {x=20*64, y=20*64}},{scroll = {x=true, y=true}})
+local MapFrame = UIWidget({allign = {x = "center"},size = {x = 20*64, y = 20*64}})
 MapFrame.renderer = manager.draw
 MapFrame.mousePressed = manager.mousePressed
 ScrollMap:addWidget(MapFrame)
