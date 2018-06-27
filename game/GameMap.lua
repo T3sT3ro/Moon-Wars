@@ -201,8 +201,15 @@ function GameMap.clear()
     res[2] = {}
 end
 
+local time = 0.0
+
 function GameMap.update(dt)
-    
+    time = time + dt
+    if time > 2.25 then time = time - 2.25 end
+    if time < 0.75 then mapType[6] = "water"
+    elseif time < 1.5 then mapType[6] = "water2"
+    else mapType[6] = "water3"
+    end 
 end
 
 function GameMap.draw(offsetX,offsetY)
