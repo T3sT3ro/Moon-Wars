@@ -80,7 +80,7 @@ local imgbttn =
 bttn.buttonHeld = function(self, delta)
     print("HELD for " .. delta)
 end
-menu = UIContextMenu({ID = "contextMenu"})
+local menu = UIContextMenu({ID = "contextMenu"})
 
 
 menu:addOption("this is the first option", function(self) print("context first clicked") end)
